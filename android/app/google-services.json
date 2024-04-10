@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "120455771575",
+    "firebase_url": "https://revo-nutri-default-rtdb.firebaseio.com",
+    "project_id": "revo-nutri",
+    "storage_bucket": "revo-nutri.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:120455771575:android:60ea9b1fe32128d87a6432",
+        "android_client_info": {
+          "package_name": "com.example.complete"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYiLAes-npZ63KWljNNYjVBnZNufmF6Bw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:120455771575:android:8f2733efe5b798917a6432",
+        "android_client_info": {
+          "package_name": "com.example.flutter_firebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYiLAes-npZ63KWljNNYjVBnZNufmF6Bw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:120455771575:android:1c741d33c869a2f77a6432",
+        "android_client_info": {
+          "package_name": "com.example.revolution_nutri"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYiLAes-npZ63KWljNNYjVBnZNufmF6Bw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
