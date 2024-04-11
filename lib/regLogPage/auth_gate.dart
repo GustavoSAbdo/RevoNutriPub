@@ -125,7 +125,7 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
                       Padding(
                         padding: const EdgeInsets.only(
                             left: 0), // Adicionado padding aqui
-                        child: Image.asset('assets/logo.png',
+                        child: Image.asset('assets/images/logo.png',
                             width: 150, height: 150),
                       ),
                       TextFormField(

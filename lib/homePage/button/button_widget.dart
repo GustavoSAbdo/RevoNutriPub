@@ -734,6 +734,9 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                         ),
                       ],
                       icon: const Icon(Icons.add),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
                     ),
                   ),
                 ),

@@ -45,10 +45,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/logo.png
-    - assets/icon.jpg
+    - assets/images/logo.png
+    - assets/images/icon.jpg
+    - assets/data/alimentos.json
    
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/icon.jpg"
+  image_path: "assets/images/icon.jpg"
