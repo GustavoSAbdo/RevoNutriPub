@@ -42,22 +42,21 @@ void main() async {
   );
 }
 
+
 Future<void> transferDataToHiveFromJson() async {
-
   String data = await rootBundle.loadString('assets/data/alimentos.json');
-
   final Map<String, dynamic> jsonMap = json.decode(data);
 
   for (var foodJson in jsonMap['Alimentos']) {
-    String name = foodJson['A'].replaceAll(',', ' ').replaceAll('  ', ' ');
+    String name = normalizeString(foodJson['A']);
     double calories = foodJson['B']?.toDouble() ?? 0.0;
     double protein = foodJson['C']?.toDouble() ?? 0.0;
     double fats = foodJson['D']?.toDouble() ?? 0.0;
     double carbs = foodJson['E']?.toDouble() ?? 0.0;
 
     double proteinKcal = protein * 4;
-    double fatsKcal = fats * 9; 
-    double carbsKcal = carbs * 4; 
+    double fatsKcal = fats * 9;
+    double carbsKcal = carbs * 4;
     String dominantNutrient = '';
     if (proteinKcal > fatsKcal && proteinKcal > carbsKcal) {
       dominantNutrient = 'proteina';
@@ -67,7 +66,6 @@ Future<void> transferDataToHiveFromJson() async {
       dominantNutrient = 'carboidrato';
     }
 
-    // Cria um objeto HiveFoodItem com os dados mapeados
     var foodItem = HiveFoodItem(
       name: name.trim(),
       calories: calories,
@@ -77,8 +75,18 @@ Future<void> transferDataToHiveFromJson() async {
       dominantNutrient: dominantNutrient,
     );
 
-    // Salva o objeto no Hive
-    await dataBaseFoods.put(foodItem.name,
-        foodItem);
+    await dataBaseFoods.put(foodItem.name, foodItem);
   }
+}
+
+String normalizeString(String input) {
+  const accents = 'ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñ';
+  const withoutAccents = 'AAAAAAaaaaaaOOOOOOooooooEEEEeeeeCcIIIIiiiiUUUUuuuuyNn';
+
+  String output = input.split('').map((char) {
+    int index = accents.indexOf(char);
+    return index != -1 ? withoutAccents[index] : char;
+  }).join();
+
+  return output.replaceAll(',', ' ').replaceAll('  ', ' ');
 }
