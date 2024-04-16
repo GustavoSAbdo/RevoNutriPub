@@ -1,32 +1,41 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'hive_refeicao.dart';
+part of 'hive_meal_goal.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class HiveRefeicaoAdapter extends TypeAdapter<HiveRefeicao> {
+class HiveMealGoalAdapter extends TypeAdapter<HiveMealGoal> {
   @override
-  final int typeId = 2;
+  final int typeId = 1;
 
   @override
-  HiveRefeicao read(BinaryReader reader) {
+  HiveMealGoal read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return HiveRefeicao(
-      items: (fields[0] as List?)?.cast<HiveFoodItem>(),
+    return HiveMealGoal(
+      totalCalories: fields[0] as double,
+      totalProtein: fields[1] as double,
+      totalCarbs: fields[2] as double,
+      totalFats: fields[3] as double,
     );
   }
 
   @override
-  void write(BinaryWriter writer, HiveRefeicao obj) {
+  void write(BinaryWriter writer, HiveMealGoal obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(4)
       ..writeByte(0)
-      ..write(obj.items);
+      ..write(obj.totalCalories)
+      ..writeByte(1)
+      ..write(obj.totalProtein)
+      ..writeByte(2)
+      ..write(obj.totalCarbs)
+      ..writeByte(3)
+      ..write(obj.totalFats);
   }
 
   @override
@@ -35,7 +44,7 @@ class HiveRefeicaoAdapter extends TypeAdapter<HiveRefeicao> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is HiveRefeicaoAdapter &&
+      other is HiveMealGoalAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

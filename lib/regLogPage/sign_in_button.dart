@@ -4,7 +4,7 @@ class SignInButton extends StatefulWidget {
   final GlobalKey<FormState> formKey;
   final Function signIn;
 
-  SignInButton({required this.formKey, required this.signIn});
+  const SignInButton({super.key, required this.formKey, required this.signIn});
 
   @override
   _SignInButtonState createState() => _SignInButtonState();

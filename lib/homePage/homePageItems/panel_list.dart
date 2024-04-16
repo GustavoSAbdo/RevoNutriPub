@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../classes.dart';
 
 class MyExpansionPanelListWidget extends StatefulWidget {
-  final String userId;
   final List<Refeicao> refeicoes;
   final Function(int, Refeicao) onRefeicaoUpdated;
   
@@ -11,11 +10,9 @@ class MyExpansionPanelListWidget extends StatefulWidget {
   final double totalDailyCarbs;
   final double totalDailyFats;
   final int numRef;
-  final MealGoal mealGoal;
 
   const MyExpansionPanelListWidget({
     super.key,
-    required this.userId,
     required this.refeicoes,
     required this.onRefeicaoUpdated,
     required this.totalDailyCalories,
@@ -23,7 +20,6 @@ class MyExpansionPanelListWidget extends StatefulWidget {
     required this.totalDailyCarbs,
     required this.totalDailyFats,
     required this.numRef,
-    required this.mealGoal
   });
 
   @override
@@ -46,7 +42,6 @@ class _MyExpansionPanelListWidgetState
 
   @override
   Widget build(BuildContext context) {
-    MealGoal mealGoal = widget.mealGoal;
 
     return SingleChildScrollView(
       child: ExpansionPanelList.radio(
@@ -80,10 +75,10 @@ class _MyExpansionPanelListWidgetState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      buildNutritionSummary('🔥 Calorias da refeição', totalCalories, mealGoal.totalCalories),
-                      buildNutritionSummary('🍗 Proteínas da refeição', totalProtein, mealGoal.totalProtein),
-                      buildNutritionSummary('🍞 Carboidratos da refeição', totalCarbs, mealGoal.totalCarbs),
-                      buildNutritionSummary('🥑 Gorduras da refeição', totalFats, mealGoal.totalFats),
+                      buildNutritionSummary('🔥 Calorias da refeição', totalCalories, widget.totalDailyCalories/widget.numRef),
+                      buildNutritionSummary('🍗 Proteínas da refeição', totalProtein, widget.totalDailyProtein/widget.numRef),
+                      buildNutritionSummary('🍞 Carboidratos da refeição', totalCarbs, widget.totalDailyCarbs/widget.numRef),
+                      buildNutritionSummary('🥑 Gorduras da refeição', totalFats, widget.totalDailyFats/widget.numRef),
                     ],
                   ),
                 ),

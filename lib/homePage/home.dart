@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:complete/homePage/hive/hive_food_item.dart';
 import 'package:complete/homePage/hive/hive_refeicao.dart';
 import 'package:hive/hive.dart';
+import 'package:complete/homePage/drawerItems/meal_goal_data.dart';
 
 class HomePage extends StatefulWidget {
   final String userId;
@@ -133,18 +134,24 @@ class _HomePageState extends State<HomePage> {
           userData = userDataSnapshot.data() as Map<String, dynamic>?;
           numRef = int.tryParse(userData!['numRefeicoes'].toString()) ?? 0;
           refeicoes = List<Refeicao>.generate(numRef, (_) => Refeicao());
-          MealGoal goal = nutritionService.calculateNutritionalGoals(userData!);
+          MealGoal goal = NutritionService().calculateNutritionalGoals(userData!);
           totalCalories = goal.totalCalories;
           totalProtein = goal.totalProtein;
           totalCarbs = goal.totalCarbs;
           totalFats = goal.totalFats;
           singleMealGoal = calculateMealGoalForSingleMeal(
-              totalCalories, totalProtein, totalCarbs, totalFats, numRef);
+              totalCalories, 
+              totalProtein, 
+              totalCarbs, 
+              totalFats, 
+              numRef);
         });
         await adjustRefeicaoBoxSize(numRef);
       }
     }
   }
+
+
 
   Future<void> adjustRefeicaoBoxSize(int newSize) async {
     final refeicaoBox = Provider.of<Box<HiveRefeicao>>(context, listen: false);
@@ -194,7 +201,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-
+      
     checkAndResetRefeicoes().then((_) {
       fetchUserData().then((_) => loadRefeicoesFromHive());
     });
@@ -261,7 +268,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
 
-    // Assegura que userId não seja nulo antes de prosseguir
     if (userId == null) {
       // Retorne um widget de erro ou redirecionamento aqui
       return const Scaffold(
@@ -328,13 +334,21 @@ class _HomePageState extends State<HomePage> {
                       )
                     ],
                   ),
-                ),                
+                ),
                 ListTile(
                   leading: const Icon(Icons.account_circle),
-                  title: const Text('Modificar Dados'),
+                  title: const Text('Modificar dados pessoais'),
                   onTap: () {
                     Navigator.pop(context); // Fecha o Drawer
                     Navigator.pushNamed(context, '/registerDois');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.account_circle),
+                  title: const Text('Definir macros da dieta manualmente'),
+                  onTap: () {
+                    Navigator.pop(context); // Fecha o Drawer
+                    Navigator.pushNamed(context, '/macrosDaDietaManualmente');
                   },
                 ),
                 ListTile(
@@ -379,29 +393,35 @@ class _HomePageState extends State<HomePage> {
           body: SingleChildScrollView(
             child: Column(
               children: <Widget>[
-                NutritionProgress(
-                  onUpdateNutrition: updateNutrition,
-                  currentCalories: currentCalories,
-                  currentProtein: currentProtein,
-                  currentCarbs: currentCarbs,
-                  currentFats: currentFats,
-                  totalCalories: totalCalories,
-                  totalProtein: totalProtein,
-                  totalCarbs: totalCarbs,
-                  totalFats: totalFats,
+                Consumer<MealGoalData>(
+                  builder: (context, mealGoalData, child) {
+                    return NutritionProgress(
+                      onUpdateNutrition: updateNutrition,
+                      currentCalories: currentCalories,
+                      currentProtein: currentProtein,
+                      currentCarbs: currentCarbs,
+                      currentFats: currentFats,
+                      totalCalories: mealGoalData.mealGoal?.totalCalories ?? totalCalories,
+                      totalProtein: mealGoalData.mealGoal?.totalProtein ?? totalProtein,
+                      totalCarbs: mealGoalData.mealGoal?.totalCarbs ?? totalCarbs,
+                      totalFats: mealGoalData.mealGoal?.totalFats ?? totalFats,
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
-                MyExpansionPanelListWidget(
-                  userId: userId,
-                  refeicoes: refeicoes,
-                  onRefeicaoUpdated: onRefeicaoUpdated,
-                  totalDailyCalories: totalCalories,
-                  totalDailyProtein: totalProtein,
-                  totalDailyCarbs: totalCarbs,
-                  totalDailyFats: totalFats,
-                  numRef: numRef,
-                  mealGoal: singleMealGoal,
-                )
+                Consumer<MealGoalData>(
+                  builder: (context, mealGoalData, child) {
+                    return MyExpansionPanelListWidget(
+                      refeicoes: refeicoes,
+                      onRefeicaoUpdated: onRefeicaoUpdated,
+                      totalDailyCalories: mealGoalData.mealGoal?.totalCalories ?? totalCalories,
+                      totalDailyProtein: mealGoalData.mealGoal?.totalProtein ?? totalProtein,
+                      totalDailyCarbs: mealGoalData.mealGoal?.totalCarbs ?? totalCarbs,
+                      totalDailyFats: mealGoalData.mealGoal?.totalFats ?? totalFats,
+                      numRef: numRef,
+                    );
+                  },
+                ),
               ],
             ),
           ),

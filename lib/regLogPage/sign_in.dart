@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:complete/regLogPage/sign_in_button.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CustomSignInScreen extends StatefulWidget {
   const CustomSignInScreen({super.key});
@@ -16,18 +17,32 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _resetPasswordController = TextEditingController();
-  bool _obscureText = true;
 
   Future<void> _signIn() async {
     if (_formKey.currentState!.validate()) {
       try {
         // Tenta fazer login com o e-mail e senha fornecidos
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-        // Se o login for bem-sucedido, navega para /home
-        Navigator.of(context).pushReplacementNamed('/home');
+
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+        Map<String, dynamic> userData =
+            userDoc.data() as Map<String, dynamic>;
+        bool hasCompletedSecondaryRegistration = userData['regDois'] ?? false;
+
+        
+        
+        if (hasCompletedSecondaryRegistration) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/registerDois');
+        }
 
         // Salva o e-mail do usuário se _saveEmail for verdadeiro
         if (_saveEmail.value) {
@@ -65,6 +80,22 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
     }
   }
 
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Erro'),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   final ValueNotifier<bool> _saveEmail = ValueNotifier<bool>(false);
 
   Future<void> _loadSaveEmailPreference() async {
@@ -74,7 +105,9 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
       if (savedSaveEmail != null) {
         _saveEmail.value = savedSaveEmail;
       }
-    } catch (e) {}
+    } catch (e) {
+      _showErrorDialog('Erro ao carregar a preferência de salvar e-mail');
+    }
   }
 
   Future<void> _loadEmail() async {
@@ -84,7 +117,9 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
       if (savedEmail != null) {
         _emailController.text = savedEmail;
       }
-    } catch (e) {}
+    } catch (e) {
+      _showErrorDialog('Erro ao carregar o e-mail salvo');
+    }
   }
 
   @override
@@ -100,11 +135,7 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
     await _loadSaveEmailPreference();
   }
 
-  void _togglePasswordVisibility() {
-    setState(() {
-      _obscureText = !_obscureText;
-    });
-  }
+  
 
   @override
   Widget build(BuildContext context) {

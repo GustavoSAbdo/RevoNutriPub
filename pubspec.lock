@@ -209,14 +209,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.1"
-  cpf_cnpj_validator:
-    dependency: "direct main"
-    description:
-      name: cpf_cnpj_validator
-      sha256: "4fb2b53d8075f74c61ecf574218954cf48421e15ae340d77c409d7cb74be4f1a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.0-nullsafety"
   crypto:
     dependency: transitive
     description:

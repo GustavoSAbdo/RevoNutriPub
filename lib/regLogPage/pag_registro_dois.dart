@@ -275,6 +275,7 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
           'peso': _pesoController.text,
           'altura': _alturaController.text,
           'refeicaoPosTreino': _refeicaoPosTreino,
+          'regDois': true
         }).then((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Dados cadastrados com sucesso!')),

@@ -7,11 +7,14 @@ import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:complete/homePage/hive/hive_food_item.dart';
 import 'package:complete/homePage/hive/hive_refeicao.dart';
+import 'package:complete/homePage/hive/hive_meal_goal.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
+import 'package:complete/homePage/drawerItems/meal_goal_data.dart';
 
 late Box<HiveFoodItem> foodBox;
 late Box<HiveFoodItem> dataBaseFoods;
+late Box<HiveMealGoal> totalMealGoalBox;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,9 +25,11 @@ void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(HiveFoodItemAdapter());
   Hive.registerAdapter(HiveRefeicaoAdapter());
+  Hive.registerAdapter(HiveMealGoalAdapter());
 
   dataBaseFoods = await Hive.openBox<HiveFoodItem>('dataBaseFoods');
   foodBox = await Hive.openBox<HiveFoodItem>('foodBox');
+  totalMealGoalBox = await Hive.openBox<HiveMealGoal>('totalMealGoalBox');
   final refeicaoBox = await Hive.openBox<HiveRefeicao>('refeicaoBox');
 
   if (dataBaseFoods.isEmpty) {
@@ -32,12 +37,19 @@ void main() async {
   }
 
   runApp(
-    Provider<Box<HiveRefeicao>>.value(
-      value: refeicaoBox,
-      child: ChangeNotifierProvider(
-        create: (_) => ThemeNotifier(),
-        child: const MyApp(),
-      ),
+    MultiProvider(
+      providers: [
+        Provider<Box<HiveRefeicao>>.value(
+          value: refeicaoBox,
+        ),
+        ChangeNotifierProvider<ThemeNotifier>(
+          create: (_) => ThemeNotifier(),
+        ),
+        ChangeNotifierProvider<MealGoalData>(
+          create: (_) => MealGoalData(totalMealGoalBox),
+        ),
+      ],
+      child: const MyApp(),
     ),
   );
 }
