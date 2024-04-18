@@ -1,17 +1,16 @@
 import 'package:complete/homePage/classes.dart';
+import 'package:complete/hive/hive_user.dart';  // Caminho para sua classe HiveUser
 
 class NutritionService {
-  MealGoal calculateNutritionalGoals(Map<String, dynamic> userData) {
-    double peso = userData['peso'] is double
-        ? userData['peso']
-        : double.tryParse(userData['peso'].toString()) ?? 0;
-    String objetivo = userData['objetivo'];
-    String nivelAtividade = userData['nivelAtividade'];
-    double coeficiente = 0;
-    double tmb = double.tryParse(userData['tmb'].toString()) ?? 0;
-    double multiplicadorProt = double.tryParse(userData['multiplicadorProt'].toString()) ?? 0;
-    double multiplicadorGord = double.tryParse(userData['multiplicadorGord'].toString()) ?? 0;
+  MealGoal calculateNutritionalGoals(HiveUser user) {
+    double peso = user.peso;
+    String objetivo = user.objetivo;
+    String nivelAtividade = user.nivelAtividade;
+    double tmb = user.tmb;
+    double multiplicadorProt = user.multiplicadorProt;
+    double multiplicadorGord = user.multiplicadorGord;
 
+    double coeficiente = 0;
     double totalFats;
     double totalCalories;
     double totalProtein;
@@ -33,7 +32,6 @@ class NutritionService {
       case 'ganharPeso':
         coeficiente = 1.07;
         break;
-      
     }
 
     switch (nivelAtividade) {

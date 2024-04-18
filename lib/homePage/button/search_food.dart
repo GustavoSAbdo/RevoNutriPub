@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:complete/homePage/hive/hive_food_item.dart'; // Caminho para sua classe HiveFoodItem
+import 'package:complete/hive/hive_food_item.dart'; // Caminho para sua classe HiveFoodItem
 
 class SearchAndSelectFoodCombinedWidget extends StatefulWidget {
   final Function(SelectedFoodItem) onFoodSelected;

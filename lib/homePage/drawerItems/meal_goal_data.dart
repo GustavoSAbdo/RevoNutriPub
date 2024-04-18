@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:complete/homePage/hive/hive_meal_goal.dart';
+import 'package:complete/hive/hive_meal_goal.dart';
 import 'package:hive/hive.dart';
 
 class MealGoalData extends ChangeNotifier {

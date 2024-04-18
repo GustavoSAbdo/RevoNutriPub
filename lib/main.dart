@@ -5,16 +5,18 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:complete/style/theme_changer.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:complete/homePage/hive/hive_food_item.dart';
-import 'package:complete/homePage/hive/hive_refeicao.dart';
-import 'package:complete/homePage/hive/hive_meal_goal.dart';
+import 'package:complete/hive/hive_food_item.dart';
+import 'package:complete/hive/hive_refeicao.dart';
+import 'package:complete/hive/hive_meal_goal.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:complete/homePage/drawerItems/meal_goal_data.dart';
+import 'package:complete/hive/hive_user.dart';
 
 late Box<HiveFoodItem> foodBox;
 late Box<HiveFoodItem> dataBaseFoods;
 late Box<HiveMealGoal> totalMealGoalBox;
+late Box<HiveUser> userBox;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,10 +28,12 @@ void main() async {
   Hive.registerAdapter(HiveFoodItemAdapter());
   Hive.registerAdapter(HiveRefeicaoAdapter());
   Hive.registerAdapter(HiveMealGoalAdapter());
+  Hive.registerAdapter(HiveUserAdapter());
 
   dataBaseFoods = await Hive.openBox<HiveFoodItem>('dataBaseFoods');
   foodBox = await Hive.openBox<HiveFoodItem>('foodBox');
   totalMealGoalBox = await Hive.openBox<HiveMealGoal>('totalMealGoalBox');
+  userBox = await Hive.openBox<HiveUser>('userBox');
   final refeicaoBox = await Hive.openBox<HiveRefeicao>('refeicaoBox');
 
   if (dataBaseFoods.isEmpty) {

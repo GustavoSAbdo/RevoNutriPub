@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'package:complete/homePage/hive/hive_food_item.dart'; 
+import 'package:complete/hive/hive_food_item.dart'; 
 
 part 'hive_refeicao.g.dart'; 
 

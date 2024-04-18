@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:complete/hive/hive_user.dart';
+import 'package:hive/hive.dart';
 
 class RegistroParteDois extends StatefulWidget {
   const RegistroParteDois({super.key});
@@ -260,35 +262,58 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
         double peso = double.tryParse(_pesoController.text) ?? 0.0;
         double altura = double.tryParse(_alturaController.text) ?? 0.0;
         int idade = int.tryParse(userData['idade'].toString()) ?? 0;
+        int numRefeicoes = int.tryParse(_numRefeicoes.toString()) ?? 0;
+        double multiplicadorProt = double.tryParse(_multiplicadorProt.toString()) ?? 0.0;
+        double multiplicadorGord = double.tryParse(_multiplicadorGord.toString()) ?? 0.0;
+        String nivelAtividade = _nivelAtividade;
+        String objetivo = _objetivo;
+        int refeicaoPosTreino = int.tryParse(_refeicaoPosTreino.toString()) ?? 0;
 
         // Calcula o TMB
         double tmb = calcularTMB(genero, peso, altura, idade);
 
-        // Atualiza os dados no Firestore
-        await FirebaseFirestore.instance.collection('users').doc(uid).update({
-          'tmb': tmb,
-          'numRefeicoes': _numRefeicoes,
-          'nivelAtividade': _nivelAtividade,
-          'objetivo': _objetivo,
-          'multiplicadorProt': _multiplicadorProt,
-          'multiplicadorGord': _multiplicadorGord.toStringAsFixed(1),
-          'peso': _pesoController.text,
-          'altura': _alturaController.text,
-          'refeicaoPosTreino': _refeicaoPosTreino,
-          'regDois': true
-        }).then((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Dados cadastrados com sucesso!')),
-          );
-          Navigator.pushReplacementNamed(context, '/home');
-        }).catchError((error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro ao cadastrar dados: $error')),
-          );
-        });
-      }
+        HiveUser newUser = HiveUser(
+        altura: altura,
+        idade: idade,
+        multiplicadorGord: multiplicadorGord,
+        multiplicadorProt: multiplicadorProt,
+        numRefeicoes: numRefeicoes,
+        peso: peso,
+        nivelAtividade: nivelAtividade,
+        objetivo: objetivo,
+        refeicaoPosTreino: refeicaoPosTreino,
+        tmb: tmb,
+      );
+
+      // Salva no Hive
+      final userBox = Hive.box<HiveUser>('userBox');
+      await userBox.put(uid, newUser);
+
+      // Atualiza os dados no Firestore
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'tmb': tmb,
+        'numRefeicoes': numRefeicoes,
+        'nivelAtividade': nivelAtividade,
+        'objetivo': objetivo,
+        'multiplicadorProt': multiplicadorProt,
+        'multiplicadorGord': multiplicadorGord.toStringAsFixed(1),
+        'peso': peso,
+        'altura': altura,
+        'refeicaoPosTreino': refeicaoPosTreino,
+        'regDois': true
+      }).then((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dados cadastrados com sucesso!')),
+        );
+        Navigator.pushReplacementNamed(context, '/home');
+      }).catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao cadastrar dados: $error')),
+        );
+      });
     }
   }
+}
 
   @override
   void initState() {
@@ -299,30 +324,24 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
   Future<void> _fetchUserData() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      DocumentSnapshot userSnapshot =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (userSnapshot.exists) {
-        Map<String, dynamic> userData =
-            userSnapshot.data() as Map<String, dynamic>;
-
-        _pesoController.text = userData['peso']?.toString() ?? '';
-        _alturaController.text = userData['altura']?.toString() ?? '';
-        _numRefeicoes = userData['numRefeicoes'] as int? ?? 2;
-        _nivelAtividade = userData['nivelAtividade'] as String? ?? '';
+      final userBox = Hive.box<HiveUser>('userBox');
+      HiveUser? user = userBox.get(uid);
+      if (user != null) {
+        _pesoController.text = user.peso.toString();
+        _alturaController.text = user.altura.toString();
+        _numRefeicoes = user.numRefeicoes;
+        _nivelAtividade = user.nivelAtividade;
         _textoNivelAtividade(_nivelAtividade);
-        _objetivo = userData['objetivo'] as String? ?? '';
+        _objetivo = user.objetivo;
         _textoObjetivo(_objetivo);
-        _multiplicadorProt =
-            double.tryParse(userData['multiplicadorProt']?.toString() ?? '') ??
-                1.0;
-        _multiplicadorGord =
-            double.tryParse(userData['multiplicadorGord']?.toString() ?? '') ??
-                1.0;
-
+        _multiplicadorProt = user.multiplicadorProt;
+        _multiplicadorGord = user.multiplicadorGord;
+        _refeicaoPosTreino = user.refeicaoPosTreino;
         setState(() {});
       }
     }
   }
+
 
   final _formKey = GlobalKey<FormState>();
 
@@ -349,7 +368,7 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                     if (value == null || value.isEmpty) {
                       return 'Por favor, insira sua altura';
                     }
-                    final altura = int.tryParse(value);
+                    final altura = double.tryParse(value);
                     if (altura == null) {
                       return 'Por favor, insira um número válido!';
                     } else if (altura < 50 || altura > 300) {

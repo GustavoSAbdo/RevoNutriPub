@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:complete/homePage/hive/hive_meal_goal.dart';
+import 'package:complete/hive/hive_meal_goal.dart';
 import 'package:complete/main.dart';
 import 'package:provider/provider.dart';
 import 'package:complete/homePage/drawerItems/meal_goal_data.dart';

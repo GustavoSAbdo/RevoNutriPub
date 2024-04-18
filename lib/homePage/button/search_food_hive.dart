@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:complete/homePage/hive/hive_food_item.dart';
+import 'package:complete/hive/hive_food_item.dart';
 
 
 class SearchAndSelectFoodFromHiveWidget extends StatefulWidget {

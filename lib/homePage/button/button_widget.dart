@@ -5,10 +5,10 @@ import 'package:complete/homePage/button/search_food.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:complete/homePage/classes.dart';
 import 'dart:math';
-import 'package:complete/homePage/hive/hive_food_item.dart';
+import 'package:complete/hive/hive_food_item.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:complete/homePage/hive/hive_refeicao.dart';
+import 'package:complete/hive/hive_refeicao.dart';
 
 class AddRemoveFoodWidget extends StatefulWidget {
   final String userId;
@@ -36,10 +36,8 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
   Offset position = const Offset(0, 0);
 
   void showRefeicaoDialog(int numRef) {
-    // Define a variável selectedRefeicao fora do builder do showDialog
     int? selectedRefeicao;
 
-    // Acessa a caixa `refeicaoBox` do Provider
     Box<HiveRefeicao> refeicaoBox =
         Provider.of<Box<HiveRefeicao>>(context, listen: false);
 
@@ -108,13 +106,17 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     List<FoodItem> tempSelectedFoodsCarb = [];
     List<FoodItem> tempSelectedFoodsProtein = [];
     List<FoodItem> tempSelectedFoodsFat = [];
-    bool shouldContinue = true; // Variável de controle
+    bool shouldContinue = true; 
+    var dataBaseFoodsBox = Hive.box<HiveFoodItem>('dataBaseFoods');
+    var foodBox = Hive.box<HiveFoodItem>('foodBox');
 
     // Função para mostrar o diálogo de seleção de alimentos por macronutriente
     Future<void> selectFoodByNutrient(
         String nutrient, List<FoodItem> targetList) async {
       bool selectionComplete = false;
       bool wasCancelled = false;
+
+      
 
       while (!selectionComplete) {
         await showDialog(
@@ -128,10 +130,10 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                 width: double.maxFinite,
                 child: SearchAndSelectFoodCombinedWidget(
                   nutrientDominant: nutrient,
-                  dataBaseFoods: Hive.box<HiveFoodItem>(
-                      'dataBaseFoods'), // Ajuste para sua caixa do Hive para "tabela TACO"
-                  foodBox: Hive.box<HiveFoodItem>(
-                      'foodBox'), // Ajuste para sua caixa do Hive para alimentos próprios
+                  dataBaseFoods:
+                      dataBaseFoodsBox, // Ajuste para sua caixa do Hive para "tabela TACO"
+                  foodBox:
+                      foodBox, // Ajuste para sua caixa do Hive para alimentos próprios
                   onFoodSelected: (SelectedFoodItem selectedFood) {
                     targetList
                         .add(FoodItem.fromMap(selectedFood.foodItem.toMap()));

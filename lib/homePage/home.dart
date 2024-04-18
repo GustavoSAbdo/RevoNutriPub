@@ -9,10 +9,11 @@ import 'button/button_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:complete/style/theme_changer.dart';
 import 'package:provider/provider.dart';
-import 'package:complete/homePage/hive/hive_food_item.dart';
-import 'package:complete/homePage/hive/hive_refeicao.dart';
+import 'package:complete/hive/hive_food_item.dart';
+import 'package:complete/hive/hive_refeicao.dart';
 import 'package:hive/hive.dart';
 import 'package:complete/homePage/drawerItems/meal_goal_data.dart';
+import 'package:complete/hive/hive_user.dart';
 
 class HomePage extends StatefulWidget {
   final String userId;
@@ -124,32 +125,32 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchUserData() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      String uid = user.uid;
-      DocumentSnapshot userDataSnapshot =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (userDataSnapshot.exists) {
-        setState(() {
-          userData = userDataSnapshot.data() as Map<String, dynamic>?;
-          numRef = int.tryParse(userData!['numRefeicoes'].toString()) ?? 0;
-          refeicoes = List<Refeicao>.generate(numRef, (_) => Refeicao());
-          MealGoal goal = NutritionService().calculateNutritionalGoals(userData!);
-          totalCalories = goal.totalCalories;
-          totalProtein = goal.totalProtein;
-          totalCarbs = goal.totalCarbs;
-          totalFats = goal.totalFats;
-          singleMealGoal = calculateMealGoalForSingleMeal(
-              totalCalories, 
-              totalProtein, 
-              totalCarbs, 
-              totalFats, 
-              numRef);
-        });
-        await adjustRefeicaoBoxSize(numRef);
-      }
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    String uid = user.uid;
+    final userBox = Hive.box<HiveUser>('userBox');
+    HiveUser? hiveUser = userBox.get(uid);
+
+    if (hiveUser != null) {
+      setState(() {
+        numRef = hiveUser.numRefeicoes;
+        refeicoes = List<Refeicao>.generate(numRef, (_) => Refeicao());
+        MealGoal goal = NutritionService().calculateNutritionalGoals(hiveUser);
+        totalCalories = goal.totalCalories;
+        totalProtein = goal.totalProtein;
+        totalCarbs = goal.totalCarbs;
+        totalFats = goal.totalFats;
+        singleMealGoal = calculateMealGoalForSingleMeal(
+            totalCalories, 
+            totalProtein, 
+            totalCarbs, 
+            totalFats, 
+            numRef);
+      });
+      await adjustRefeicaoBoxSize(numRef);
     }
   }
+}
 
 
 
