@@ -12,11 +12,14 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:complete/homePage/drawerItems/meal_goal_data.dart';
 import 'package:complete/hive/hive_user.dart';
+import 'package:complete/hive/hive_meal_goal_list.dart';
 
 late Box<HiveFoodItem> foodBox;
 late Box<HiveFoodItem> dataBaseFoods;
 late Box<HiveMealGoal> totalMealGoalBox;
 late Box<HiveUser> userBox;
+late Box<HiveMealGoalList> mealGoalListBox;
+late Box<HiveMealGoal> mealGoals;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,16 +32,21 @@ void main() async {
   Hive.registerAdapter(HiveRefeicaoAdapter());
   Hive.registerAdapter(HiveMealGoalAdapter());
   Hive.registerAdapter(HiveUserAdapter());
+  Hive.registerAdapter(HiveMealGoalListAdapter());
 
   dataBaseFoods = await Hive.openBox<HiveFoodItem>('dataBaseFoods');
   foodBox = await Hive.openBox<HiveFoodItem>('foodBox');
   totalMealGoalBox = await Hive.openBox<HiveMealGoal>('totalMealGoalBox');
   userBox = await Hive.openBox<HiveUser>('userBox');
+  mealGoalListBox = await Hive.openBox<HiveMealGoalList>('mealGoalListBox');
+  mealGoals = await Hive.openBox<HiveMealGoal>('mealGoals');
   final refeicaoBox = await Hive.openBox<HiveRefeicao>('refeicaoBox');
 
   if (dataBaseFoods.isEmpty) {
     await transferDataToHiveFromJson();
   }
+
+  
 
   runApp(
     MultiProvider(
@@ -57,6 +65,9 @@ void main() async {
     ),
   );
 }
+
+
+
 
 
 Future<void> transferDataToHiveFromJson() async {

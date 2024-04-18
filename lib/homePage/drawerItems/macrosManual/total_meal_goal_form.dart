@@ -104,7 +104,7 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
                       _carbsController.clear();
                       _fatsController.clear();
                       _caloriesController.clear();
-                      Navigator.pop(context);
+                      Navigator.pushReplacementNamed(context, '/home');
                     },
                     child: const Text('Limpar'),
                   ),
@@ -124,8 +124,8 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
   String? _validateNumber(String? value) {
     if (value == null ||
         double.tryParse(value.replaceAll(',', '.')) == null ||
-        double.parse(value.replaceAll(',', '.')) < 0) {
-      return 'Por favor, insira um número válido maior ou igual a 0';
+        double.parse(value.replaceAll(',', '.')) < 1) {
+      return 'Por favor, insira um número válido maior ou igual a 1';
     }
     return null;
   }
@@ -141,7 +141,7 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
       );
       totalMealGoalBox.add(newGoal);
       Provider.of<MealGoalData>(context, listen: false).update(newGoal);
-      Navigator.pop(context);
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 }

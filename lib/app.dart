@@ -7,8 +7,9 @@ import 'package:provider/provider.dart';
 import 'package:complete/style/theme_changer.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'regLogPage/sign_in.dart';
-import 'package:complete/homePage/drawerItems/total_meal_goal_form.dart';
-
+import 'package:complete/homePage/drawerItems/macrosManual/total_meal_goal_form.dart';
+import 'package:complete/homePage/drawerItems/macrosManual/macros_manual_page.dart';
+import 'package:complete/homePage/drawerItems/macrosManual/ref_meal_goal_form.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -31,6 +32,8 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/registerDois': (context) => const RegistroParteDois(),
         '/macrosDaDietaManualmente': (context) =>  const MealGoalFormPage(),
+        '/macrosPage':(context) => const MacrosManualPage(),
+        '/macrosRefPage':(context) =>  MealInputPage(),
       },
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

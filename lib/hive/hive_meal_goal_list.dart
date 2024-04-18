@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'hive_meal_goal.dart'; // Importando a classe HiveMealGoal
+import 'hive_meal_goal.dart'; 
 
 part 'hive_meal_goal_list.g.dart'; // Este arquivo será gerado pelo build_runner
 

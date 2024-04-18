@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'homePageItems/calorie_tracker.dart';
 import 'homePageItems/panel_list.dart';
-import 'button/button_widget.dart';
+import 'floatingButton/button_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:complete/style/theme_changer.dart';
 import 'package:provider/provider.dart';
@@ -346,10 +346,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.account_circle),
-                  title: const Text('Definir macros da dieta manualmente'),
+                  title: const Text('Definir manualmente'),
                   onTap: () {
                     Navigator.pop(context); // Fecha o Drawer
-                    Navigator.pushNamed(context, '/macrosDaDietaManualmente');
+                    Navigator.pushNamed(context, '/macrosPage');
                   },
                 ),
                 ListTile(

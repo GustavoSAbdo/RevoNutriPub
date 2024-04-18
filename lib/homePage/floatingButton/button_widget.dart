@@ -1,7 +1,7 @@
 import 'package:complete/main.dart';
-import 'package:complete/homePage/button/own_food_dialog.dart';
+import 'package:complete/homePage/floatingButton/own_food_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:complete/homePage/button/search_food.dart';
+import 'package:complete/homePage/floatingButton/search_food.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:complete/homePage/classes.dart';
 import 'dart:math';
