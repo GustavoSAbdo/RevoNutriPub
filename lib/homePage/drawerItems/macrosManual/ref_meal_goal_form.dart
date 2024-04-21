@@ -27,6 +27,7 @@ class _MealInputPageState extends State<MealInputPage> {
   late Box userBox;
   HiveUser? user;
   late int refPosTreino;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -147,6 +148,13 @@ class _MealInputPageState extends State<MealInputPage> {
                       ),
                       ElevatedButton(
                         onPressed: saveAllInputs,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primary, // Cor de fundo do botão
+                          foregroundColor:
+                              Colors.white, // Cor do texto e ícones do botão
+                        ),
                         child: const Text('Salvar'),
                       ),
                     ],

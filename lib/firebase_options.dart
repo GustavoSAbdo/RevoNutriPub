@@ -27,10 +27,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.macOS:
         return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return web;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -80,5 +77,5 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://revo-nutri-default-rtdb.firebaseio.com',
     storageBucket: 'revo-nutri.appspot.com',
     iosBundleId: 'com.example.complete.RunnerTests',
-  );
+  );  
 }

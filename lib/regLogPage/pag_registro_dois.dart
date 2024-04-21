@@ -22,6 +22,7 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
   String textoNivelAtividade = '';
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _alturaController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -263,57 +264,60 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
         double altura = double.tryParse(_alturaController.text) ?? 0.0;
         int idade = int.tryParse(userData['idade'].toString()) ?? 0;
         int numRefeicoes = int.tryParse(_numRefeicoes.toString()) ?? 0;
-        double multiplicadorProt = double.tryParse(_multiplicadorProt.toString()) ?? 0.0;
-        double multiplicadorGord = double.tryParse(_multiplicadorGord.toString()) ?? 0.0;
+        double multiplicadorProt =
+            double.tryParse(_multiplicadorProt.toString()) ?? 0.0;
+        double multiplicadorGord =
+            double.tryParse(_multiplicadorGord.toString()) ?? 0.0;
         String nivelAtividade = _nivelAtividade;
         String objetivo = _objetivo;
-        int refeicaoPosTreino = int.tryParse(_refeicaoPosTreino.toString()) ?? 0;
+        int refeicaoPosTreino =
+            int.tryParse(_refeicaoPosTreino.toString()) ?? 0;
 
         // Calcula o TMB
         double tmb = calcularTMB(genero, peso, altura, idade);
 
         HiveUser newUser = HiveUser(
-        altura: altura,
-        idade: idade,
-        multiplicadorGord: multiplicadorGord,
-        multiplicadorProt: multiplicadorProt,
-        numRefeicoes: numRefeicoes,
-        peso: peso,
-        nivelAtividade: nivelAtividade,
-        objetivo: objetivo,
-        refeicaoPosTreino: refeicaoPosTreino,
-        tmb: tmb,
-      );
-
-      // Salva no Hive
-      final userBox = Hive.box<HiveUser>('userBox');
-      await userBox.put(uid, newUser);
-
-      // Atualiza os dados no Firestore
-      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-        'tmb': tmb,
-        'numRefeicoes': numRefeicoes,
-        'nivelAtividade': nivelAtividade,
-        'objetivo': objetivo,
-        'multiplicadorProt': multiplicadorProt,
-        'multiplicadorGord': multiplicadorGord.toStringAsFixed(1),
-        'peso': peso,
-        'altura': altura,
-        'refeicaoPosTreino': refeicaoPosTreino,
-        'regDois': true
-      }).then((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dados cadastrados com sucesso!')),
+          altura: altura,
+          idade: idade,
+          multiplicadorGord: multiplicadorGord,
+          multiplicadorProt: multiplicadorProt,
+          numRefeicoes: numRefeicoes,
+          peso: peso,
+          nivelAtividade: nivelAtividade,
+          objetivo: objetivo,
+          refeicaoPosTreino: refeicaoPosTreino,
+          tmb: tmb,
         );
-        Navigator.pushReplacementNamed(context, '/home');
-      }).catchError((error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao cadastrar dados: $error')),
-        );
-      });
+
+        // Salva no Hive
+        final userBox = Hive.box<HiveUser>('userBox');
+        await userBox.put(uid, newUser);
+
+        // Atualiza os dados no Firestore
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'tmb': tmb,
+          'numRefeicoes': numRefeicoes,
+          'nivelAtividade': nivelAtividade,
+          'objetivo': objetivo,
+          'multiplicadorProt': multiplicadorProt,
+          'multiplicadorGord': multiplicadorGord.toStringAsFixed(1),
+          'peso': peso,
+          'altura': altura,
+          'refeicaoPosTreino': refeicaoPosTreino,
+          'regDois': true
+        }).then((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Dados cadastrados com sucesso!')),
+          );
+          Navigator.pushReplacementNamed(context, '/home');
+        }).catchError((error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao cadastrar dados: $error')),
+          );
+        });
+      }
     }
   }
-}
 
   @override
   void initState() {
@@ -342,7 +346,6 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
     }
   }
 
-
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -354,12 +357,12 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
       body: Padding(
           padding: const EdgeInsets.all(8.0),
           child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
+              child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
                   controller: _alturaController,
                   decoration: const InputDecoration(
                       labelText: 'Altura (cm)', hintText: 'Digite sua altura'),
@@ -467,13 +470,28 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                     padding: const EdgeInsets.all(
                         16.0), // Ajuste o padding conforme necessário
                     child: ElevatedButton(
-                      onPressed: () {
-                      // Valide o Form quando o botão for pressionado
-                      if (_formKey.currentState?.validate() ?? false) {
-                        _cadastrarDados();
-                      }
-                    },
-                    child: const Text('Confirmar'),
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              if (_formKey.currentState?.validate() ?? false) {
+                                _cadastrarDados();
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isLoading
+                            ? Colors.blueGrey
+                            : Theme.of(context)
+                                .colorScheme
+                                .primary, // Cor de fundo do botão
+                        foregroundColor:
+                            Colors.white, // Cor do texto e ícones do botão
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            )
+                          : const Text('Confirmar'), // Texto exibido no botão
                     ),
                   ),
                 ),

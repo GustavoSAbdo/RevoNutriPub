@@ -110,6 +110,13 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
                   ),
                   ElevatedButton(
                     onPressed: _saveForm,
+                    style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primary, // Cor de fundo do botão
+                          foregroundColor:
+                              Colors.white, // Cor do texto e ícones do botão
+                        ),
                     child: const Text('Salvar'),
                   ),
                 ],
