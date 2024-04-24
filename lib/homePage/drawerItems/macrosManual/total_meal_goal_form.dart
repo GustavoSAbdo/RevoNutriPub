@@ -104,6 +104,10 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
                       _carbsController.clear();
                       _fatsController.clear();
                       _caloriesController.clear();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Dados limpos com sucesso!')),
+                      );
                       Navigator.pushReplacementNamed(context, '/home');
                     },
                     child: const Text('Limpar'),
@@ -111,12 +115,12 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
                   ElevatedButton(
                     onPressed: _saveForm,
                     style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primary, // Cor de fundo do botão
-                          foregroundColor:
-                              Colors.white, // Cor do texto e ícones do botão
-                        ),
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary, // Cor de fundo do botão
+                      foregroundColor:
+                          Colors.white, // Cor do texto e ícones do botão
+                    ),
                     child: const Text('Salvar'),
                   ),
                 ],
@@ -148,6 +152,9 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
       );
       totalMealGoalBox.add(newGoal);
       Provider.of<MealGoalData>(context, listen: false).update(newGoal);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dados salvos com sucesso!')),
+      );
       Navigator.pushReplacementNamed(context, '/home');
     }
   }

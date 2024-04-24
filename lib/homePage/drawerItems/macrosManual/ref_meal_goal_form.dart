@@ -36,35 +36,35 @@ class _MealInputPageState extends State<MealInputPage> {
   }
 
   void initializeMealData() async {
-  userBox = await Hive.openBox<HiveUser>('userBox');
-  final uid = FirebaseAuth.instance.currentUser?.uid;
+    userBox = await Hive.openBox<HiveUser>('userBox');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
-  if (uid != null && userBox.containsKey(uid)) {
-    HiveUser user = userBox.get(uid)!;
-    int numMeals = user.numRefeicoes;
-    refPosTreino = user.refeicaoPosTreino;
+    if (uid != null && userBox.containsKey(uid)) {
+      HiveUser user = userBox.get(uid)!;
+      int numMeals = user.numRefeicoes;
+      refPosTreino = user.refeicaoPosTreino;
 
-    // Correção: Supondo que os dados de refeição estão salvos em outra box específica para MealGoals
-    var box = Hive.box<HiveMealGoal>('mealGoals'); // Certifique-se que esta box é aberta em algum ponto antes de ser usada
-    List<HiveMealGoal> mealGoals = box.values.toList();
+      // Correção: Supondo que os dados de refeição estão salvos em outra box específica para MealGoals
+      var box = Hive.box<HiveMealGoal>(
+          'mealGoals'); // Certifique-se que esta box é aberta em algum ponto antes de ser usada
+      List<HiveMealGoal> mealGoals = box.values.toList();
 
-    if (mealGoals.isNotEmpty) {
-      meals = mealGoals.map((mealGoal) => MealData(
-        carbs: mealGoal.totalCarbs.toStringAsFixed(2),
-        protein: mealGoal.totalProtein.toStringAsFixed(2),
-        fats: mealGoal.totalFats.toStringAsFixed(2),
-      )).toList();
-    } else {
-      // Inicializa com campos vazios se não houver dados salvos
-      meals = List.generate(numMeals, (_) => MealData());
+      if (mealGoals.isNotEmpty) {
+        meals = mealGoals
+            .map((mealGoal) => MealData(
+                  carbs: mealGoal.totalCarbs.toStringAsFixed(2),
+                  protein: mealGoal.totalProtein.toStringAsFixed(2),
+                  fats: mealGoal.totalFats.toStringAsFixed(2),
+                ))
+            .toList();
+      } else {
+        // Inicializa com campos vazios se não houver dados salvos
+        meals = List.generate(numMeals, (_) => MealData());
+      }
+
+      setState(() {});
     }
-
-    setState(() {});
   }
-}
-
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -150,8 +150,8 @@ class _MealInputPageState extends State<MealInputPage> {
                         onPressed: saveAllInputs,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primary, // Cor de fundo do botão
+                              .colorScheme
+                              .primary, // Cor de fundo do botão
                           foregroundColor:
                               Colors.white, // Cor do texto e ícones do botão
                         ),
@@ -165,27 +165,31 @@ class _MealInputPageState extends State<MealInputPage> {
     );
   }
 
-  void clearAllInputs() {
+  void clearAllInputs() async {
+    var box = Hive.box<HiveMealGoal>('mealGoals');
+    await box.clear();
     for (var meal in meals!) {
       meal.carbs.clear();
       meal.protein.clear();
       meal.fats.clear();
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Dados limpos com sucesso!')),
+    );
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   void saveAllInputs() async {
-    // Supondo que a box para 'HiveMealGoal' seja chamada 'mealGoals'
     var box = Hive.box<HiveMealGoal>('mealGoals');
-
-    // Se a 'mealGoalListBox' deve conter uma lista de 'HiveMealGoal', então
+    await box.clear();
+    // Limpa a lista existente antes de adicionar novos itens
     var mealGoalsList =
         Hive.box<HiveMealGoalList>('mealGoalListBox').get('mealGoalsList');
 
     if (mealGoalsList == null) {
       mealGoalsList = HiveMealGoalList(mealGoals: HiveList(box));
     } else {
-      mealGoalsList.mealGoals.clear();
-      await Hive.box<HiveMealGoalList>('mealGoalListBox').put('mealGoalsList', mealGoalsList); 
+      mealGoalsList.mealGoals.clear(); // Limpa a lista de objetivos de refeição
     }
 
     for (var mealData in meals!) {
@@ -205,7 +209,7 @@ class _MealInputPageState extends State<MealInputPage> {
       // Adiciona o objeto 'mealGoal' à 'box' de 'HiveMealGoal'
       box.add(mealGoal);
 
-      Hive.box<HiveMealGoal>('mealGoals').add(mealGoal);
+      // Adiciona o objeto à HiveList após estar na box
       mealGoalsList.mealGoals.add(mealGoal);
     }
 
@@ -215,8 +219,9 @@ class _MealInputPageState extends State<MealInputPage> {
 
     // Feedback ao usuário
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Dados salvos com sucesso!')),
+      const SnackBar(content: Text('Dados salvos com sucesso!')),
     );
+
     // Navega para outra página ou atualiza a UI
     Navigator.pushReplacementNamed(context, '/home');
   }
