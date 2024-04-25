@@ -1,4 +1,7 @@
 import 'package:hive/hive.dart';
+import 'package:complete/hive/hive_meal_goal.dart';
+import 'package:complete/hive/hive_meal_goal_list.dart';
+
 
 part 'hive_user.g.dart'; 
 
@@ -34,6 +37,12 @@ class HiveUser extends HiveObject {
   @HiveField(9)
   double tmb; 
 
+  @HiveField(10)
+  HiveMealGoalList? macrosRef;
+
+  @HiveField(11)
+  HiveMealGoal? macrosDiarios;
+
   HiveUser({
     required this.altura,
     required this.idade,
@@ -45,5 +54,7 @@ class HiveUser extends HiveObject {
     required this.objetivo,
     required this.refeicaoPosTreino,
     required this.tmb,
+    this.macrosRef,
+    this.macrosDiarios,
   });
 }

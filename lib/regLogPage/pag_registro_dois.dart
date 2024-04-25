@@ -3,6 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:complete/hive/hive_user.dart';
 import 'package:hive/hive.dart';
+import 'package:complete/homePage/homePageItems/nutrition_service.dart';
+import 'package:complete/homePage/classes.dart';
+import 'package:complete/hive/hive_meal_goal.dart';
 
 class RegistroParteDois extends StatefulWidget {
   const RegistroParteDois({super.key});
@@ -30,6 +33,9 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
     _alturaController.dispose();
     super.dispose();
   }
+
+  
+  final NutritionService nutritionService = NutritionService();
 
   void _showObjetivoDialog() {
     showDialog(
@@ -276,6 +282,8 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
         // Calcula o TMB
         double tmb = calcularTMB(genero, peso, altura, idade);
 
+        
+
         HiveUser newUser = HiveUser(
           altura: altura,
           idade: idade,
@@ -289,6 +297,14 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
           tmb: tmb,
         );
 
+        MealGoal goal = NutritionService().calculateNutritionalGoals(newUser);
+
+        newUser.macrosDiarios = HiveMealGoal(
+          totalCalories: goal.totalCalories,
+          totalProtein: goal.totalProtein,
+          totalCarbs: goal.totalCarbs,
+          totalFats: goal.totalFats,
+        );
         // Salva no Hive
         final userBox = Hive.box<HiveUser>('userBox');
         await userBox.put(uid, newUser);

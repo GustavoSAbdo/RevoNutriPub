@@ -9,6 +9,7 @@ import 'package:complete/hive/hive_food_item.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:complete/hive/hive_refeicao.dart';
+import 'package:complete/hive/hive_meal_goal_list.dart';
 
 class AddRemoveFoodWidget extends StatefulWidget {
   final String userId;
@@ -106,7 +107,7 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     List<FoodItem> tempSelectedFoodsCarb = [];
     List<FoodItem> tempSelectedFoodsProtein = [];
     List<FoodItem> tempSelectedFoodsFat = [];
-    bool shouldContinue = true; 
+    bool shouldContinue = true;
     var dataBaseFoodsBox = Hive.box<HiveFoodItem>('dataBaseFoods');
     var foodBox = Hive.box<HiveFoodItem>('foodBox');
 
@@ -115,8 +116,6 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
         String nutrient, List<FoodItem> targetList) async {
       bool selectionComplete = false;
       bool wasCancelled = false;
-
-      
 
       while (!selectionComplete) {
         await showDialog(
@@ -207,7 +206,17 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     await selectFoodByNutrient('gordura', tempSelectedFoodsFat);
     if (!shouldContinue) return;
 
-    mealGoal = widget.mealGoal;
+    var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
+    var mealGoalsList = box.get('mealGoalsList');
+
+    if (mealGoalsList != null &&
+        selectedRefeicaoIndex < mealGoalsList.mealGoals.length) {
+      mealGoal = MealGoal.fromHiveMealGoal(
+          mealGoalsList.mealGoals[selectedRefeicaoIndex]);
+    } else {
+      mealGoal = widget.mealGoal;
+    }
+
     bool controllerProteinMais = verificaAliMaisUm(tempSelectedFoodsProtein);
     bool controllerCarbsMais = verificaAliMaisUm(tempSelectedFoodsCarb);
     bool controllerFatsMais = verificaAliMaisUm(tempSelectedFoodsFat);
@@ -223,7 +232,7 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
           tempSelectedFoodsCarb,
           tempSelectedFoodsProtein,
           tempSelectedFoodsFat,
-          widget.mealGoal);
+         mealGoal);
     } else if (controllerFatsMais ||
         controllerCarbsMais ||
         controllerProteinMais) {
@@ -231,13 +240,13 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
           tempSelectedFoodsCarb,
           tempSelectedFoodsProtein,
           tempSelectedFoodsFat,
-          widget.mealGoal);
+          mealGoal);
     } else {
       allSelectedFoodsWithQuantities = calculateFoodQuantities(
           tempSelectedFoodsCarb,
           tempSelectedFoodsProtein,
           tempSelectedFoodsFat,
-          widget.mealGoal);
+          mealGoal);
     }
 
     // Apresenta a visão geral das quantidades de alimentos selecionados para confirmação

@@ -3,6 +3,8 @@ import 'package:complete/hive/hive_meal_goal.dart';
 import 'package:complete/main.dart';
 import 'package:provider/provider.dart';
 import 'package:complete/homePage/drawerItems/meal_goal_data.dart';
+import 'package:hive/hive.dart';
+import 'package:complete/hive/hive_meal_goal_list.dart';
 
 class MealGoalFormPage extends StatefulWidget {
   const MealGoalFormPage({super.key});
@@ -108,7 +110,17 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
                         const SnackBar(
                             content: Text('Dados limpos com sucesso!')),
                       );
-                      Navigator.pushReplacementNamed(context, '/home');
+                      var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
+                      var mealGoalsList = box.get('mealGoalsList');
+
+                      // Aqui verificamos se o mealGoalsList não é nulo e se tem itens
+                      if (mealGoalsList != null &&
+                          mealGoalsList.mealGoals.isNotEmpty) {
+                        Navigator.pushReplacementNamed(
+                            context, '/macrosRefPage');
+                      } else {
+                        Navigator.pushReplacementNamed(context, '/home');
+                      }
                     },
                     child: const Text('Limpar'),
                   ),
@@ -150,12 +162,22 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
         totalFats: double.parse(_fatsController.text.replaceAll(',', '.')),
         totalCalories: double.parse(_caloriesController.text),
       );
+
       totalMealGoalBox.add(newGoal);
       Provider.of<MealGoalData>(context, listen: false).update(newGoal);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Dados salvos com sucesso!')),
       );
-      Navigator.pushReplacementNamed(context, '/home');
+
+      var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
+      var mealGoalsList = box.get('mealGoalsList');
+
+      // Aqui verificamos se o mealGoalsList não é nulo e se tem itens
+      if (mealGoalsList != null && mealGoalsList.mealGoals.isNotEmpty) {
+        Navigator.pushReplacementNamed(context, '/macrosRefPage');
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     }
   }
 }

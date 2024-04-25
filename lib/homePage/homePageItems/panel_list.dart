@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../classes.dart';
+import 'package:hive/hive.dart';
+import 'package:complete/hive/hive_meal_goal_list.dart';
+import 'package:complete/hive/hive_meal_goal.dart';
 
 class MyExpansionPanelListWidget extends StatefulWidget {
   final List<Refeicao> refeicoes;
   final Function(int, Refeicao) onRefeicaoUpdated;
-  
+
   final double totalDailyCalories;
   final double totalDailyProtein;
   final double totalDailyCarbs;
@@ -29,7 +32,8 @@ class MyExpansionPanelListWidget extends StatefulWidget {
 
 class _MyExpansionPanelListWidgetState
     extends State<MyExpansionPanelListWidget> {
-  double calculateTotal(List<FoodItem> items, double Function(FoodItem) selector) {
+  double calculateTotal(
+      List<FoodItem> items, double Function(FoodItem) selector) {
     return items.fold(0.0, (double prev, item) => prev + selector(item));
   }
 
@@ -42,19 +46,30 @@ class _MyExpansionPanelListWidgetState
 
   @override
   Widget build(BuildContext context) {
+    var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
+    var mealGoalsList = box
+        .get('mealGoalsList'); // Assume que isso retorna uma HiveMealGoalList
+
+    if (mealGoalsList == null) {
+      return const Center(child: Text("Nenhum dado de refeição disponível."));
+    }
 
     return SingleChildScrollView(
       child: ExpansionPanelList.radio(
-        children: widget.refeicoes.asMap().entries.map((entry) {
+        children: mealGoalsList.mealGoals.asMap().entries.map((entry) {
           int index = entry.key;
-          Refeicao refeicao = entry.value;
+          HiveMealGoal mealGoal = entry.value;
+          Refeicao refeicao = widget.refeicoes[index];
 
-          // double totalCalories = calculateTotal(refeicao.items, (item) => item.calories);
-          double totalProtein = calculateTotal(refeicao.items, (item) => item.protein);
-          double totalCarbs = calculateTotal(refeicao.items, (item) => item.carbs);
-          double totalFats = calculateTotal(refeicao.items, (item) => item.fats);
-          double totalCalories = totalProtein * 4 + totalCarbs * 4 + totalFats * 9;
-          
+          double totalProtein =
+              calculateTotal(refeicao.items, (item) => item.protein);
+          double totalCarbs =
+              calculateTotal(refeicao.items, (item) => item.carbs);
+          double totalFats =
+              calculateTotal(refeicao.items, (item) => item.fats);
+          double totalCalories =
+              totalProtein * 4 + totalCarbs * 4 + totalFats * 9;
+
           return ExpansionPanelRadio(
             value: index,
             headerBuilder: (BuildContext context, bool isExpanded) {
@@ -65,7 +80,8 @@ class _MyExpansionPanelListWidgetState
             body: Column(
               children: [
                 ...refeicao.items.map((foodItem) => ListTile(
-                      title: Text('${foodItem.quantity.toStringAsFixed(1)}g de ${foodItem.name}'),
+                      title: Text(
+                          '${foodItem.quantity.toStringAsFixed(1)}g de ${foodItem.name}'),
                       subtitle: Text(
                           'Calorias: ${foodItem.calories.toStringAsFixed(2)}, Proteínas: ${foodItem.protein.toStringAsFixed(2)}, Carboidratos: ${foodItem.carbs.toStringAsFixed(2)}, Gorduras: ${foodItem.fats.toStringAsFixed(2)}'),
                     )),
@@ -75,10 +91,14 @@ class _MyExpansionPanelListWidgetState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      buildNutritionSummary('🔥 Calorias da refeição', totalCalories, widget.totalDailyCalories/widget.numRef),
-                      buildNutritionSummary('🍗 Proteínas da refeição', totalProtein, widget.totalDailyProtein/widget.numRef),
-                      buildNutritionSummary('🍞 Carboidratos da refeição', totalCarbs, widget.totalDailyCarbs/widget.numRef),
-                      buildNutritionSummary('🥑 Gorduras da refeição', totalFats, widget.totalDailyFats/widget.numRef),
+                      buildNutritionSummary('🔥 Calorias da refeição',
+                          totalCalories, mealGoal.totalCalories),
+                      buildNutritionSummary('🍗 Proteínas da refeição',
+                          totalProtein, mealGoal.totalProtein),
+                      buildNutritionSummary('🍞 Carboidratos da refeição',
+                          totalCarbs, mealGoal.totalCarbs),
+                      buildNutritionSummary('🥑 Gorduras da refeição',
+                          totalFats, mealGoal.totalFats),
                     ],
                   ),
                 ),

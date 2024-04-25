@@ -1,19 +1,37 @@
+import 'package:complete/hive/hive_meal_goal.dart';
+import 'package:complete/homePage/drawerItems/meal_goal_data.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:complete/hive/hive_user.dart';
 import 'package:complete/hive/hive_meal_goal_list.dart';
-import 'package:complete/hive/hive_meal_goal.dart';
 
 class MealData {
   TextEditingController carbs = TextEditingController();
   TextEditingController protein = TextEditingController();
   TextEditingController fats = TextEditingController();
+  Function updateCallback;
 
-  MealData({String carbs = '', String protein = '', String fats = ''}) {
+  MealData(
+      {String carbs = '',
+      String protein = '',
+      String fats = '',
+      required this.updateCallback}) {
     this.carbs.text = carbs;
     this.protein.text = protein;
     this.fats.text = fats;
+
+    // Adicionar listeners para atualizar a UI quando os valores mudarem
+    this.carbs.addListener(() => updateCallback());
+    this.protein.addListener(() => updateCallback());
+    this.fats.addListener(() => updateCallback());
+  }
+
+  void dispose() {
+    carbs.dispose();
+    protein.dispose();
+    fats.dispose();
   }
 }
 
@@ -28,11 +46,55 @@ class _MealInputPageState extends State<MealInputPage> {
   HiveUser? user;
   late int refPosTreino;
   bool isLoading = true;
+  double remainingCarbs = 0.0;
+  double remainingProtein = 0.0;
+  double remainingFats = 0.0;
 
   @override
   void initState() {
     super.initState();
     initializeMealData();
+    calculateRemainingMacros();
+  }
+
+  void calculateRemainingMacros() {
+    final mealGoalData = Provider.of<MealGoalData>(context, listen: false);
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      String uid = user.uid;
+      final userBox = Hive.box<HiveUser>('userBox');
+      HiveUser? hiveUser = userBox.get(uid);
+
+      if (mealGoalData.mealGoal != null && meals != null) {
+        remainingCarbs = mealGoalData.mealGoal?.totalCarbs ?? 0.0;
+        remainingProtein = mealGoalData.mealGoal?.totalProtein ?? 0.0;
+        remainingFats = mealGoalData.mealGoal?.totalFats ?? 0.0;
+
+        for (var meal in meals!) {
+          remainingCarbs -= double.tryParse(meal.carbs.text) ?? 0.0;
+          remainingProtein -= double.tryParse(meal.protein.text) ?? 0.0;
+          remainingFats -= double.tryParse(meal.fats.text) ?? 0.0;
+        }
+        setState(() {});
+      } else if (hiveUser != null && hiveUser.macrosDiarios != null) {
+        remainingCarbs = hiveUser.macrosDiarios?.totalCarbs ?? 0.0;
+        remainingFats = hiveUser.macrosDiarios?.totalFats ?? 0.0;
+        remainingProtein = hiveUser.macrosDiarios?.totalProtein ?? 0.0;
+        print('remainingCarbs: $remainingCarbs, remainingProtein: $remainingProtein, remainingFats: $remainingFats');
+
+        for (var meal in meals ?? []) {
+          remainingCarbs -= double.tryParse(meal.carbs.text) ?? 0.0;
+          remainingProtein -= double.tryParse(meal.protein.text) ?? 0.0;
+          remainingFats -= double.tryParse(meal.fats.text) ?? 0.0;
+        }
+        setState(() {});
+      }
+    }
+  }
+
+  void updateMacros() {
+    calculateRemainingMacros();
+    setState(() {});
   }
 
   void initializeMealData() async {
@@ -44,9 +106,7 @@ class _MealInputPageState extends State<MealInputPage> {
       int numMeals = user.numRefeicoes;
       refPosTreino = user.refeicaoPosTreino;
 
-      // Correção: Supondo que os dados de refeição estão salvos em outra box específica para MealGoals
-      var box = Hive.box<HiveMealGoal>(
-          'mealGoals'); // Certifique-se que esta box é aberta em algum ponto antes de ser usada
+      var box = Hive.box<HiveMealGoal>('mealGoals');
       List<HiveMealGoal> mealGoals = box.values.toList();
 
       if (mealGoals.isNotEmpty) {
@@ -55,29 +115,57 @@ class _MealInputPageState extends State<MealInputPage> {
                   carbs: mealGoal.totalCarbs.toStringAsFixed(2),
                   protein: mealGoal.totalProtein.toStringAsFixed(2),
                   fats: mealGoal.totalFats.toStringAsFixed(2),
+                  updateCallback: updateMacros,
                 ))
             .toList();
       } else {
-        // Inicializa com campos vazios se não houver dados salvos
-        meals = List.generate(numMeals, (_) => MealData());
+        meals = List.generate(
+            numMeals, (_) => MealData(updateCallback: updateMacros));
       }
 
+      calculateRemainingMacros(); // Adicione esta linha
       setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Meal Inputs'),
       ),
-      body: meals == null
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
+      body: Column(
+        children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  const Text(
+                    'Macros Restantes:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Carboidratos: ${remainingCarbs.toStringAsFixed(2)}g',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Proteínas: ${remainingProtein.toStringAsFixed(2)}g',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Gorduras: ${remainingFats.toStringAsFixed(2)}g',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: meals == null
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
                     itemCount: meals!.length,
                     itemBuilder: (context, index) {
                       return Card(
@@ -136,32 +224,29 @@ class _MealInputPageState extends State<MealInputPage> {
                       );
                     },
                   ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                ElevatedButton(
+                  onPressed: clearAllInputs,
+                  child: const Text('Limpar'),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: <Widget>[
-                      ElevatedButton(
-                        onPressed: clearAllInputs,
-                        child: const Text('Limpar'),
-                      ),
-                      ElevatedButton(
-                        onPressed: saveAllInputs,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .primary, // Cor de fundo do botão
-                          foregroundColor:
-                              Colors.white, // Cor do texto e ícones do botão
-                        ),
-                        child: const Text('Salvar'),
-                      ),
-                    ],
+                ElevatedButton(
+                  onPressed: saveAllInputs,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
                   ),
+                  child: const Text('Salvar'),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -180,16 +265,26 @@ class _MealInputPageState extends State<MealInputPage> {
   }
 
   void saveAllInputs() async {
+    if (remainingCarbs != 0.0 ||
+        remainingProtein != 0.0 ||
+        remainingFats != 0.0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Por favor, certifique-se de que todos os macros restantes são iguais a zero antes de salvar.')),
+      );
+      return;
+    }
+
     var box = Hive.box<HiveMealGoal>('mealGoals');
     await box.clear();
-    // Limpa a lista existente antes de adicionar novos itens
     var mealGoalsList =
         Hive.box<HiveMealGoalList>('mealGoalListBox').get('mealGoalsList');
 
     if (mealGoalsList == null) {
       mealGoalsList = HiveMealGoalList(mealGoals: HiveList(box));
     } else {
-      mealGoalsList.mealGoals.clear(); // Limpa a lista de objetivos de refeição
+      mealGoalsList.mealGoals.clear();
     }
 
     for (var mealData in meals!) {
@@ -206,23 +301,17 @@ class _MealInputPageState extends State<MealInputPage> {
         totalFats: totalFats,
       );
 
-      // Adiciona o objeto 'mealGoal' à 'box' de 'HiveMealGoal'
       box.add(mealGoal);
-
-      // Adiciona o objeto à HiveList após estar na box
       mealGoalsList.mealGoals.add(mealGoal);
     }
 
-    // Salva as alterações na box de 'HiveMealGoalList'
     await Hive.box<HiveMealGoalList>('mealGoalListBox')
         .put('mealGoalsList', mealGoalsList);
 
-    // Feedback ao usuário
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Dados salvos com sucesso!')),
     );
 
-    // Navega para outra página ou atualiza a UI
     Navigator.pushReplacementNamed(context, '/home');
   }
 }

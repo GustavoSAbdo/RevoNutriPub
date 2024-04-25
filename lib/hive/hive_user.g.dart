@@ -27,13 +27,15 @@ class HiveUserAdapter extends TypeAdapter<HiveUser> {
       objetivo: fields[7] as String,
       refeicaoPosTreino: fields[8] as int,
       tmb: fields[9] as double,
+      macrosRef: fields[10] as HiveMealGoalList?,
+      macrosDiarios: fields[11] as HiveMealGoal?,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveUser obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.altura)
       ..writeByte(1)
@@ -53,7 +55,11 @@ class HiveUserAdapter extends TypeAdapter<HiveUser> {
       ..writeByte(8)
       ..write(obj.refeicaoPosTreino)
       ..writeByte(9)
-      ..write(obj.tmb);
+      ..write(obj.tmb)
+      ..writeByte(10)
+      ..write(obj.macrosRef)
+      ..writeByte(11)
+      ..write(obj.macrosDiarios);
   }
 
   @override

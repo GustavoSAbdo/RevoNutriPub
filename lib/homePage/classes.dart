@@ -1,3 +1,4 @@
+import 'package:complete/hive/hive_meal_goal.dart';
 class FoodItem {
   final String name;
   double calories; // por 100g
@@ -84,4 +85,14 @@ class MealGoal {
     required this.totalCarbs,
     required this.totalFats,
   });
+
+  // Método estático para conversão
+  static MealGoal fromHiveMealGoal(HiveMealGoal hiveGoal) {
+    return MealGoal(
+      totalCalories: hiveGoal.totalCalories,
+      totalProtein: hiveGoal.totalProtein,
+      totalCarbs: hiveGoal.totalCarbs,
+      totalFats: hiveGoal.totalFats,
+    );
+  }
 }

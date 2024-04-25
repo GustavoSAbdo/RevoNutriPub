@@ -18,15 +18,18 @@ class HiveRefeicaoAdapter extends TypeAdapter<HiveRefeicao> {
     };
     return HiveRefeicao(
       items: (fields[0] as List?)?.cast<HiveFoodItem>(),
+      modified: fields[1] as bool? ?? false ,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveRefeicao obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(2)
       ..writeByte(0)
-      ..write(obj.items);
+      ..write(obj.items)
+      ..writeByte(1)
+      ..write(obj.modified);
   }
 
   @override

@@ -134,12 +134,11 @@ class _HomePageState extends State<HomePage> {
     if (hiveUser != null) {
       setState(() {
         numRef = hiveUser.numRefeicoes;
-        refeicoes = List<Refeicao>.generate(numRef, (_) => Refeicao());
-        MealGoal goal = NutritionService().calculateNutritionalGoals(hiveUser);
-        totalCalories = goal.totalCalories;
-        totalProtein = goal.totalProtein;
-        totalCarbs = goal.totalCarbs;
-        totalFats = goal.totalFats;
+        refeicoes = List<Refeicao>.generate(numRef, (_) => Refeicao());        
+        totalCalories = hiveUser.macrosDiarios?.totalCalories ?? 0;
+        totalProtein = hiveUser.macrosDiarios?.totalProtein ?? 0;
+        totalCarbs = hiveUser.macrosDiarios?.totalCarbs ?? 0;
+        totalFats = hiveUser.macrosDiarios?.totalFats ?? 0;
         singleMealGoal = calculateMealGoalForSingleMeal(
             totalCalories, 
             totalProtein, 
@@ -275,7 +274,7 @@ class _HomePageState extends State<HomePage> {
         body: Center(child: Text("Usuário não identificado.")),
       );
     }
-
+    
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
       builder: (context, snapshot) {
