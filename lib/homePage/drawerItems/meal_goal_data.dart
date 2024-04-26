@@ -13,9 +13,18 @@ class MealGoalData extends ChangeNotifier {
   }
 
   void update(HiveMealGoal newGoal) {
-    mealGoal = newGoal;
-    mealGoalBox.putAt(0, newGoal);
-    notifyListeners();
+    var key = mealGoalBox.values
+        .toList()
+        .indexWhere((element) => element.key == newGoal.key);
+
+    if (key != -1) {
+      mealGoalBox.putAt(key, newGoal);
+    } else {
+      mealGoalBox.add(newGoal);
+    }
+
+    mealGoal = newGoal; 
+    notifyListeners(); 
   }
 
   void clear() {

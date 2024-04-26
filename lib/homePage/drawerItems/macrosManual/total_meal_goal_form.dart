@@ -40,13 +40,18 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
   }
 
   @override
-  void dispose() {
+void dispose() {
+    _proteinController.removeListener(_updateCalories);
+    _carbsController.removeListener(_updateCalories);
+    _fatsController.removeListener(_updateCalories);
+    // Dispose controllers
     _proteinController.dispose();
     _carbsController.dispose();
     _fatsController.dispose();
     _caloriesController.dispose();
     super.dispose();
-  }
+}
+
 
   void _updateCalories() {
     double protein =

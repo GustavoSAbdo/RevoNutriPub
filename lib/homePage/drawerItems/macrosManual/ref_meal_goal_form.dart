@@ -80,7 +80,6 @@ class _MealInputPageState extends State<MealInputPage> {
         remainingCarbs = hiveUser.macrosDiarios?.totalCarbs ?? 0.0;
         remainingFats = hiveUser.macrosDiarios?.totalFats ?? 0.0;
         remainingProtein = hiveUser.macrosDiarios?.totalProtein ?? 0.0;
-        print('remainingCarbs: $remainingCarbs, remainingProtein: $remainingProtein, remainingFats: $remainingFats');
 
         for (var meal in meals ?? []) {
           remainingCarbs -= double.tryParse(meal.carbs.text) ?? 0.0;
