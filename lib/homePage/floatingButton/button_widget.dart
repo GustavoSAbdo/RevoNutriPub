@@ -86,6 +86,10 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                       Navigator.of(context).pop(selectedRefeicao);
                     }
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('Próximo'),
                 ),
               ],
@@ -155,6 +159,10 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Próximo'),
                     ),
                   ],
@@ -232,7 +240,7 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
           tempSelectedFoodsCarb,
           tempSelectedFoodsProtein,
           tempSelectedFoodsFat,
-         mealGoal);
+          mealGoal);
     } else if (controllerFatsMais ||
         controllerCarbsMais ||
         controllerProteinMais) {
@@ -288,6 +296,10 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
 
                 Navigator.of(context).pop();
               },
+              style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                  ),
               child: const Text('Confirmar'),
             ),
           ],

@@ -1,27 +1,20 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../classes.dart';
 import 'package:hive/hive.dart';
 import 'package:complete/hive/hive_meal_goal_list.dart';
 import 'package:complete/hive/hive_meal_goal.dart';
+import 'package:complete/hive/hive_user.dart';
 
 class MyExpansionPanelListWidget extends StatefulWidget {
   final List<Refeicao> refeicoes;
   final Function(int, Refeicao) onRefeicaoUpdated;
-
-  final double totalDailyCalories;
-  final double totalDailyProtein;
-  final double totalDailyCarbs;
-  final double totalDailyFats;
   final int numRef;
 
   const MyExpansionPanelListWidget({
     super.key,
     required this.refeicoes,
     required this.onRefeicaoUpdated,
-    required this.totalDailyCalories,
-    required this.totalDailyProtein,
-    required this.totalDailyCarbs,
-    required this.totalDailyFats,
     required this.numRef,
   });
 
@@ -46,14 +39,38 @@ class _MyExpansionPanelListWidgetState
 
   @override
   Widget build(BuildContext context) {
-    var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
-    var mealGoalsList = box
-        .get('mealGoalsList'); // Assume que isso retorna uma HiveMealGoalList
 
+    var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
+    HiveMealGoalList? mealGoalsList = box.get('mealGoalsList');
+
+    if (mealGoalsList == null || mealGoalsList.mealGoals.isEmpty) {
+      var autBox = Hive.box<HiveMealGoalList>('mealGoalListBoxAut');
+      mealGoalsList = autBox.get('mealGoalListBoxAut');
+
+      if (mealGoalsList == null || mealGoalsList.mealGoals.isEmpty) {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          var userBox = Hive.box<HiveUser>('userBox');
+          HiveUser? hiveUser = userBox.get(uid);
+
+          if (hiveUser != null && hiveUser.macrosRef != null) {
+            mealGoalsList =
+                hiveUser.macrosRef;
+          } else {
+            return const Center(
+                child: Text("Nenhum dado de refeição disponível."));
+          }
+        }
+      }
+    }
+
+    return buildPanelList(mealGoalsList);
+  }
+
+  Widget buildPanelList(HiveMealGoalList? mealGoalsList) {
     if (mealGoalsList == null) {
       return const Center(child: Text("Nenhum dado de refeição disponível."));
     }
-
     return SingleChildScrollView(
       child: ExpansionPanelList.radio(
         children: mealGoalsList.mealGoals.asMap().entries.map((entry) {

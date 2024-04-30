@@ -19,7 +19,9 @@ late Box<HiveFoodItem> dataBaseFoods;
 late Box<HiveMealGoal> totalMealGoalBox;
 late Box<HiveUser> userBox;
 late Box<HiveMealGoalList> mealGoalListBox;
+late Box<HiveMealGoalList> mealGoalListBoxAut;
 late Box<HiveMealGoal> mealGoals;
+late Box<HiveMealGoal> userMealGoals;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +41,9 @@ void main() async {
   totalMealGoalBox = await Hive.openBox<HiveMealGoal>('totalMealGoalBox');
   userBox = await Hive.openBox<HiveUser>('userBox');
   mealGoalListBox = await Hive.openBox<HiveMealGoalList>('mealGoalListBox');
+  mealGoalListBoxAut = await Hive.openBox<HiveMealGoalList>('mealGoalListBoxAut');
   mealGoals = await Hive.openBox<HiveMealGoal>('mealGoals');
+  userMealGoals = await Hive.openBox<HiveMealGoal>('userMealGoals');
   final refeicaoBox = await Hive.openBox<HiveRefeicao>('refeicaoBox');
 
   if (dataBaseFoods.isEmpty) {

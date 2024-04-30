@@ -49,6 +49,11 @@ class _MealInputPageState extends State<MealInputPage> {
   double remainingCarbs = 0.0;
   double remainingProtein = 0.0;
   double remainingFats = 0.0;
+  
+  static const double epsilon = 0.009;
+  bool isCloseToZero(double value) {
+    return value.abs() < epsilon;
+  }
 
   @override
   void initState() {
@@ -264,9 +269,9 @@ class _MealInputPageState extends State<MealInputPage> {
   }
 
   void saveAllInputs() async {
-    if (remainingCarbs != 0.0 ||
-        remainingProtein != 0.0 ||
-        remainingFats != 0.0) {
+     if (!isCloseToZero(remainingCarbs) ||
+        !isCloseToZero(remainingProtein) ||
+        !isCloseToZero(remainingFats)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text(

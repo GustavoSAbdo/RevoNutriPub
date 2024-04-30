@@ -170,6 +170,10 @@ class FoodDialogs {
                   Navigator.of(context).pop();
                 }
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Adicionar'),
             ),
           ],
@@ -265,7 +269,10 @@ class FoodDialogs {
                   },
                 ),
                 TextButton(
-                  child: const Text('Concluir exclusão'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
                     for (var food in foodsToDelete) {
                       var key = foodBox.keys.firstWhere(
@@ -276,7 +283,8 @@ class FoodDialogs {
                       }
                     }
                     Navigator.of(context).pop();
-                  },
+                  },                  
+                  child: const Text('Excluir'),
                 ),
               ],
             );

@@ -156,20 +156,15 @@ class _HomePageState extends State<HomePage> {
   Future<void> adjustRefeicaoBoxSize(int newSize) async {
     final refeicaoBox = Provider.of<Box<HiveRefeicao>>(context, listen: false);
 
-    // Expandir ou reduzir o tamanho da refeicaoBox para corresponder a newSize
     while (refeicaoBox.length < newSize) {
       await refeicaoBox.add(HiveRefeicao(items: []));
     }
 
-    // Se por algum motivo o tamanho da box for maior que o necessário, você pode remover os excessos
-    // Isso deve ser usado com cuidado para não perder dados inadvertidamente
     while (refeicaoBox.length > newSize) {
       await refeicaoBox.deleteAt(refeicaoBox.length - 1);
     }
 
-    // Atualize o estado para refletir as mudanças na UI, se necessário
     setState(() {
-      // Atualize o estado conforme necessário
     });
   }
 
@@ -414,10 +409,6 @@ class _HomePageState extends State<HomePage> {
                     return MyExpansionPanelListWidget(
                       refeicoes: refeicoes,
                       onRefeicaoUpdated: onRefeicaoUpdated,
-                      totalDailyCalories: mealGoalData.mealGoal?.totalCalories ?? totalCalories,
-                      totalDailyProtein: mealGoalData.mealGoal?.totalProtein ?? totalProtein,
-                      totalDailyCarbs: mealGoalData.mealGoal?.totalCarbs ?? totalCarbs,
-                      totalDailyFats: mealGoalData.mealGoal?.totalFats ?? totalFats,
                       numRef: numRef,
                     );
                   },

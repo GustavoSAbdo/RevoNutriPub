@@ -21,77 +21,87 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
   final _resetPasswordController = TextEditingController();
 
   Future<void> _signIn() async {
-  if (_formKey.currentState!.validate()) {
-    try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+    if (_formKey.currentState!.validate()) {
+      try {
+        UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
 
-      // Assumindo que o login foi bem-sucedido, obtém os dados do usuário
-      await fetchAndStoreUserData(userCredential.user!.uid);
+        // Assumindo que o login foi bem-sucedido, obtém os dados do usuário
+        await fetchAndStoreUserData(userCredential.user!.uid);
 
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .get();
-      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-      bool hasCompletedSecondaryRegistration = userData['regDois'] ?? false;
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        bool hasCompletedSecondaryRegistration = userData['regDois'] ?? false;
 
-      if (hasCompletedSecondaryRegistration) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        Navigator.of(context).pushReplacementNamed('/registerDois');
+        if (hasCompletedSecondaryRegistration) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/registerDois');
+        }
+
+        // Salva o e-mail do usuário se _saveEmail for verdadeiro
+        if (_saveEmail.value) {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('email', _emailController.text.trim());
+          await prefs.setBool('saveEmail', _saveEmail.value);
+        }
+      } on FirebaseAuthException catch (e) {
+        String errorMessage;
+        switch (e.code) {
+          case 'invalid-credential':
+            errorMessage =
+                'Email ou senha incorretos. Por favor verifique seus dados e tente novamente.';
+            break;
+          default:
+            errorMessage = 'Ocorreu um erro ao fazer login.';
+            break;
+        }
+        _showErrorDialog(errorMessage);
       }
-
-      // Salva o e-mail do usuário se _saveEmail for verdadeiro
-      if (_saveEmail.value) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('email', _emailController.text.trim());
-        await prefs.setBool('saveEmail', _saveEmail.value);
-      }
-    } on FirebaseAuthException catch (e) {
-      String errorMessage;
-      switch (e.code) {
-        case 'invalid-credential':
-          errorMessage = 'Email ou senha incorretos. Por favor verifique seus dados e tente novamente.';
-          break;
-        default:
-          errorMessage = 'Ocorreu um erro ao fazer login.';
-          break;
-      }
-      _showErrorDialog(errorMessage);
     }
   }
-}
 
-Future<void> fetchAndStoreUserData(String userId) async {
-  final userBox = Hive.box<HiveUser>('userBox');
-  HiveUser? hiveUser = userBox.get(userId);
+  Future<void> fetchAndStoreUserData(String userId) async {
+    final userBox = Hive.box<HiveUser>('userBox');
+    HiveUser? hiveUser = userBox.get(userId);
 
-  if (hiveUser == null) {
-    // Se não há dados no Hive, busca do Firebase
-    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    var userData = userDoc.data() as Map<String, dynamic>;
+    if (hiveUser == null) {
+      // Se não há dados no Hive, busca do Firebase
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      var userData = userDoc.data() as Map<String, dynamic>;
 
-    hiveUser = HiveUser(
-      altura: double.tryParse(userData['altura']?.toString() ?? '0.0') ?? 0.0,
-      idade: int.tryParse(userData['idade']?.toString() ?? '0') ?? 0,
-      multiplicadorGord: double.tryParse(userData['multiplicadorGord']?.toString() ?? '0.0') ?? 0.0,
-      multiplicadorProt: double.tryParse(userData['multiplicadorProt']?.toString() ?? '0.0') ?? 0.0,
-      numRefeicoes: int.tryParse(userData['numRefeicoes']?.toString() ?? '0') ?? 0,
-      peso: double.tryParse(userData['peso']?.toString() ?? '0.0') ?? 0.0,
-      nivelAtividade: userData['nivelAtividade'] as String,
-      objetivo: userData['objetivo'] as String,
-      refeicaoPosTreino: int.tryParse(userData['refeicaoPosTreino']?.toString() ?? '0') ?? 0,
-      tmb: double.tryParse(userData['tmb']?.toString() ?? '0.0') ?? 0.0,
-    );
+      hiveUser = HiveUser(
+        altura: double.tryParse(userData['altura']?.toString() ?? '0.0') ?? 0.0,
+        idade: int.tryParse(userData['idade']?.toString() ?? '0') ?? 0,
+        multiplicadorGord: double.tryParse(
+                userData['multiplicadorGord']?.toString() ?? '0.0') ??
+            0.0,
+        multiplicadorProt: double.tryParse(
+                userData['multiplicadorProt']?.toString() ?? '0.0') ??
+            0.0,
+        numRefeicoes:
+            int.tryParse(userData['numRefeicoes']?.toString() ?? '0') ?? 0,
+        peso: double.tryParse(userData['peso']?.toString() ?? '0.0') ?? 0.0,
+        nivelAtividade: userData['nivelAtividade'] as String,
+        objetivo: userData['objetivo'] as String,
+        refeicaoPosTreino:
+            int.tryParse(userData['refeicaoPosTreino']?.toString() ?? '0') ?? 0,
+        tmb: double.tryParse(userData['tmb']?.toString() ?? '0.0') ?? 0.0,
+      );
 
-    // Salva os dados no Hive
-    await userBox.put(userId, hiveUser);
+      // Salva os dados no Hive
+      await userBox.put(userId, hiveUser);
+    }
   }
-}
-
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -147,8 +157,6 @@ Future<void> fetchAndStoreUserData(String userId) async {
     await _loadEmail();
     await _loadSaveEmailPreference();
   }
-
-  
 
   @override
   Widget build(BuildContext context) {
@@ -260,6 +268,11 @@ Future<void> fetchAndStoreUserData(String userId) async {
                                   ),
                                   actions: <Widget>[
                                     TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    TextButton(
                                       onPressed: () async {
                                         try {
                                           await FirebaseAuth.instance
@@ -298,12 +311,13 @@ Future<void> fetchAndStoreUserData(String userId) async {
                                           );
                                         }
                                       },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        foregroundColor: Colors.white,
+                                      ),
                                       child: const Text('Enviar'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(),
-                                      child: const Text('Cancelar'),
                                     ),
                                   ],
                                 ),

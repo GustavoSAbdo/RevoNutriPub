@@ -1,3 +1,6 @@
+import 'package:complete/hive/hive_user.dart';
+import 'package:complete/homePage/homePageItems/nutrition_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:complete/hive/hive_meal_goal.dart';
 import 'package:complete/main.dart';
@@ -40,7 +43,7 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
   }
 
   @override
-void dispose() {
+  void dispose() {
     _proteinController.removeListener(_updateCalories);
     _carbsController.removeListener(_updateCalories);
     _fatsController.removeListener(_updateCalories);
@@ -50,8 +53,7 @@ void dispose() {
     _fatsController.dispose();
     _caloriesController.dispose();
     super.dispose();
-}
-
+  }
 
   void _updateCalories() {
     double protein =
@@ -107,6 +109,8 @@ void dispose() {
                   ElevatedButton(
                     onPressed: () {
                       Provider.of<MealGoalData>(context, listen: false).clear();
+                      var autListBox = Hive.box<HiveMealGoalList>('mealGoalListBoxAut');
+                      autListBox.clear();
                       _proteinController.clear();
                       _carbsController.clear();
                       _fatsController.clear();
@@ -158,7 +162,7 @@ void dispose() {
     return null;
   }
 
-  void _saveForm() {
+  void _saveForm() async {
     if (_formKey.currentState!.validate()) {
       final newGoal = HiveMealGoal(
         totalProtein:
@@ -177,7 +181,17 @@ void dispose() {
       var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
       var mealGoalsList = box.get('mealGoalsList');
 
-      // Aqui verificamos se o mealGoalsList não é nulo e se tem itens
+      User? user = FirebaseAuth.instance.currentUser;
+      final userBox = Hive.box<HiveUser>('userBox');
+      if (user != null && userBox.containsKey(user.uid)) {
+        String uid = user.uid;
+        HiveUser? hiveUser = userBox.get(uid);
+
+        HiveMealGoalList calculatedMealGoals = NutritionService().calculateRefGoals(hiveUser!);
+        var autListBox = Hive.box<HiveMealGoalList>('mealGoalListBoxAut');
+        autListBox.put('mealGoalListBoxAut', calculatedMealGoals);
+      }
+      
       if (mealGoalsList != null && mealGoalsList.mealGoals.isNotEmpty) {
         Navigator.pushReplacementNamed(context, '/macrosRefPage');
       } else {

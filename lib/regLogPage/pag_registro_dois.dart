@@ -231,7 +231,7 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Selecione a refeição pós-treino'),
+          title: const Text('Selecione a refeição pós-treino'),          
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
@@ -305,9 +305,13 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
           totalCarbs: goal.totalCarbs,
           totalFats: goal.totalFats,
         );
+        
+        newUser.macrosRef = nutritionService.calculateRefGoals(newUser);        
+
         // Salva no Hive
         final userBox = Hive.box<HiveUser>('userBox');
         await userBox.put(uid, newUser);
+        
 
         // Atualiza os dados no Firestore
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
@@ -432,7 +436,8 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                   },
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton(
+                const Text('Refeição pós treino:'),
+                ElevatedButton(                  
                   onPressed: _showRefeicaoPosTreinoDialog,
                   child: Text(_refeicaoPosTreino == 0
                       ? 'Selecionar'
