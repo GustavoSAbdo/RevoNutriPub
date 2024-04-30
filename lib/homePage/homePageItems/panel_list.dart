@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../classes.dart';
+import 'package:complete/homePage/classes.dart';
 import 'package:hive/hive.dart';
 import 'package:complete/hive/hive_meal_goal_list.dart';
 import 'package:complete/hive/hive_meal_goal.dart';
@@ -10,13 +10,14 @@ class MyExpansionPanelListWidget extends StatefulWidget {
   final List<Refeicao> refeicoes;
   final Function(int, Refeicao) onRefeicaoUpdated;
   final int numRef;
+  final int refPosTreino;
 
-  const MyExpansionPanelListWidget({
-    super.key,
-    required this.refeicoes,
-    required this.onRefeicaoUpdated,
-    required this.numRef,
-  });
+  const MyExpansionPanelListWidget(
+      {super.key,
+      required this.refeicoes,
+      required this.onRefeicaoUpdated,
+      required this.numRef,
+      required this.refPosTreino});
 
   @override
   _MyExpansionPanelListWidgetState createState() =>
@@ -25,6 +26,7 @@ class MyExpansionPanelListWidget extends StatefulWidget {
 
 class _MyExpansionPanelListWidgetState
     extends State<MyExpansionPanelListWidget> {
+
   double calculateTotal(
       List<FoodItem> items, double Function(FoodItem) selector) {
     return items.fold(0.0, (double prev, item) => prev + selector(item));
@@ -39,7 +41,6 @@ class _MyExpansionPanelListWidgetState
 
   @override
   Widget build(BuildContext context) {
-
     var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
     HiveMealGoalList? mealGoalsList = box.get('mealGoalsList');
 
@@ -52,10 +53,8 @@ class _MyExpansionPanelListWidgetState
         if (uid != null) {
           var userBox = Hive.box<HiveUser>('userBox');
           HiveUser? hiveUser = userBox.get(uid);
-
           if (hiveUser != null && hiveUser.macrosRef != null) {
-            mealGoalsList =
-                hiveUser.macrosRef;
+            mealGoalsList = hiveUser.macrosRef;
           } else {
             return const Center(
                 child: Text("Nenhum dado de refeição disponível."));
@@ -71,7 +70,7 @@ class _MyExpansionPanelListWidgetState
     if (mealGoalsList == null) {
       return const Center(child: Text("Nenhum dado de refeição disponível."));
     }
-    return SingleChildScrollView(
+    var panelList = SingleChildScrollView(
       child: ExpansionPanelList.radio(
         children: mealGoalsList.mealGoals.asMap().entries.map((entry) {
           int index = entry.key;
@@ -87,12 +86,14 @@ class _MyExpansionPanelListWidgetState
           double totalCalories =
               totalProtein * 4 + totalCarbs * 4 + totalFats * 9;
 
+          String refeicaoTitle = (index + 1 == widget.refPosTreino)
+              ? 'Refeição Pós Treino'
+              : 'Refeição ${index + 1}';
+
           return ExpansionPanelRadio(
             value: index,
             headerBuilder: (BuildContext context, bool isExpanded) {
-              return ListTile(
-                title: Text('Refeição ${index + 1}'),
-              );
+              return ListTile(title: Text(refeicaoTitle));
             },
             body: Column(
               children: [
@@ -125,5 +126,6 @@ class _MyExpansionPanelListWidgetState
         }).toList(),
       ),
     );
+    return panelList;
   }
 }

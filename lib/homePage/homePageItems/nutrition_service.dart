@@ -72,7 +72,7 @@ class NutritionService {
   HiveMealGoalList calculateRefGoals(HiveUser user) {
     int qtdRef = user.numRefeicoes;
     HiveMealGoal? userMealGoal = user.macrosDiarios;
-    // int refPosTreino = user.refeicaoPosTreino;
+    int refPosTreino = user.refeicaoPosTreino;
     var mealGoalBox = Hive.box<HiveMealGoal>('totalMealGoalBox');
     HiveMealGoal? mealGoal;
     late double protPerMeal;
@@ -83,36 +83,56 @@ class NutritionService {
     if (mealGoalBox.isEmpty) {
       if (userMealGoal == null) {
         var box = Hive.box<HiveMealGoal>('mealGoals');
-        return HiveMealGoalList(
-            mealGoals: HiveList<HiveMealGoal>(box)); 
+        return HiveMealGoalList(mealGoals: HiveList<HiveMealGoal>(box));
       }
 
       protPerMeal = userMealGoal.totalProtein / qtdRef;
       carbsPerMeal = userMealGoal.totalCarbs / qtdRef;
       fatsPerMeal = userMealGoal.totalFats / qtdRef;
-      caloriesPerMeal = userMealGoal.totalCalories / qtdRef;      
+      caloriesPerMeal = userMealGoal.totalCalories / qtdRef;
     } else {
       mealGoal = mealGoalBox.getAt(0);
       protPerMeal = mealGoal!.totalProtein / qtdRef;
       carbsPerMeal = mealGoal.totalCarbs / qtdRef;
       fatsPerMeal = mealGoal.totalFats / qtdRef;
-      caloriesPerMeal = mealGoal.totalCalories / qtdRef;    
+      caloriesPerMeal = mealGoal.totalCalories / qtdRef;
     }
 
-    var userBox = Hive.box<HiveMealGoal>('userMealGoals');
-
-      var userMealGoalsList = HiveList<HiveMealGoal>(userBox);
-
-      for (int i = 0; i < qtdRef; i++) {
-        HiveMealGoal mealGoal = HiveMealGoal(
+    List<HiveMealGoal> mealGoals = List.generate(
+        qtdRef,
+        (i) => HiveMealGoal(
             totalCalories: caloriesPerMeal,
             totalProtein: protPerMeal,
             totalCarbs: carbsPerMeal,
-            totalFats: fatsPerMeal);
+            totalFats: fatsPerMeal));
 
-        userBox.add(mealGoal);
-        userMealGoalsList.add(mealGoal);
+    var userBox = Hive.box<HiveMealGoal>('userMealGoals');
+    var userMealGoalsList = HiveList<HiveMealGoal>(userBox);
+
+    if (refPosTreino >= 0 && refPosTreino <= qtdRef) {
+      // Cálculos para ajustes
+      double fatsAdjustment = fatsPerMeal * 0.5;
+      double protAdjustment = protPerMeal * 0.1;
+      double carbsAdjustment = carbsPerMeal * 0.1;
+
+      for (int i = 0; i < qtdRef; i++) {
+        if (i+1 == refPosTreino) {
+          mealGoals[i].totalFats -= fatsAdjustment;
+          mealGoals[i].totalProtein += protAdjustment;
+          mealGoals[i].totalCarbs += carbsAdjustment;
+        } else {
+          mealGoals[i].totalFats += fatsAdjustment / (qtdRef - 1);
+          mealGoals[i].totalProtein -= protAdjustment / (qtdRef - 1);
+          mealGoals[i].totalCarbs -= carbsAdjustment / (qtdRef - 1);
+        }
+        mealGoals[i].totalCalories = mealGoals[i].totalProtein * 4 +
+            mealGoals[i].totalCarbs * 4 +
+            mealGoals[i].totalFats * 9;
+        userBox.add(mealGoals[i]);
+        userMealGoalsList.add(mealGoals[i]);
       }
-      return HiveMealGoalList(mealGoals: userMealGoalsList);
+    }
+
+    return HiveMealGoalList(mealGoals: userMealGoalsList);
   }
 }

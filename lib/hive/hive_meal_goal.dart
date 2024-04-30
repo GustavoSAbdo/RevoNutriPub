@@ -5,16 +5,16 @@ part 'hive_meal_goal.g.dart';
 @HiveType(typeId: 1)
 class HiveMealGoal extends HiveObject{
   @HiveField(0)
-  final double totalCalories;
+  double totalCalories;
 
   @HiveField(1)
-  final double totalProtein;
+  double totalProtein;
 
   @HiveField(2)
-  final double totalCarbs;
+  double totalCarbs;
 
   @HiveField(3)
-  final double totalFats;
+  double totalFats;
 
   HiveMealGoal({
     required this.totalCalories,

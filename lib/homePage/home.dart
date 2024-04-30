@@ -31,6 +31,8 @@ class _HomePageState extends State<HomePage> {
   int numRef = 0;
   late MealGoal singleMealGoal;
 
+  late int refPosTreino;
+
   double totalCalories = 0;
   double totalProtein = 0;
   double totalCarbs = 0;
@@ -262,7 +264,9 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
-
+    final userBox = Hive.box<HiveUser>('userBox');
+    HiveUser? hiveUser = userBox.get(userId);
+    refPosTreino = hiveUser!.refeicaoPosTreino;
     if (userId == null) {
       // Retorne um widget de erro ou redirecionamento aqui
       return const Scaffold(
@@ -410,6 +414,7 @@ class _HomePageState extends State<HomePage> {
                       refeicoes: refeicoes,
                       onRefeicaoUpdated: onRefeicaoUpdated,
                       numRef: numRef,
+                      refPosTreino: refPosTreino,
                     );
                   },
                 ),
