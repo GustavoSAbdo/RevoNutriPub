@@ -1,5 +1,7 @@
+import 'package:complete/hive/hive_user.dart';
 import 'package:complete/main.dart';
 import 'package:complete/homePage/floatingButton/own_food_dialog.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:complete/homePage/floatingButton/search_food.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,13 +16,11 @@ import 'package:complete/hive/hive_meal_goal_list.dart';
 class AddRemoveFoodWidget extends StatefulWidget {
   final String userId;
   final Function(int, FoodItem, double) onFoodAdded;
-  final MealGoal mealGoal;
 
   const AddRemoveFoodWidget(
       {super.key,
       required this.userId,
-      required this.onFoodAdded,
-      required this.mealGoal});
+      required this.onFoodAdded});
   @override
   _AddRemoveFoodWidgetState createState() => _AddRemoveFoodWidgetState();
 }
@@ -42,6 +42,13 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     Box<HiveRefeicao> refeicaoBox =
         Provider.of<Box<HiveRefeicao>>(context, listen: false);
 
+    User? user = FirebaseAuth.instance.currentUser;
+    final userBox = Hive.box<HiveUser>('userBox');
+    HiveUser? hiveUser = userBox.get(user!.uid);
+
+    
+    int refPosTreino = hiveUser!.refeicaoPosTreino;
+
     showDialog<int>(
       context: context,
       builder: (BuildContext context) {
@@ -58,7 +65,9 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                       bool isRefeicaoModified =
                           refeicaoBox.getAt(i)?.items.isNotEmpty ?? false;
                       return ListTile(
-                        title: Text('Refeição ${i + 1}'),
+                        title: Text(i + 1 == refPosTreino
+                            ? 'Refeição Pós Treino'
+                            : 'Refeição ${i + 1}'),
                         leading: Radio<int>(
                           value: i,
                           groupValue: selectedRefeicao,
@@ -216,13 +225,26 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
 
     var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
     var mealGoalsList = box.get('mealGoalsList');
+    User? user = FirebaseAuth.instance.currentUser;
+    final userBox = Hive.box<HiveUser>('userBox');
+    HiveUser? hiveUser = userBox.get(user!.uid);
+    var autBox = Hive.box<HiveMealGoalList>('mealGoalListBoxAut');
+    var autMealGoalsList = autBox.get('mealGoalListBoxAut');
 
     if (mealGoalsList != null &&
         selectedRefeicaoIndex < mealGoalsList.mealGoals.length) {
       mealGoal = MealGoal.fromHiveMealGoal(
           mealGoalsList.mealGoals[selectedRefeicaoIndex]);
+    } else if (autMealGoalsList != null &&
+        selectedRefeicaoIndex < autMealGoalsList.mealGoals.length) {
+      mealGoal = MealGoal.fromHiveMealGoal(
+          autMealGoalsList.mealGoals[selectedRefeicaoIndex]);
     } else {
-      mealGoal = widget.mealGoal;
+      if (hiveUser!.macrosRef != null &&
+          selectedRefeicaoIndex < hiveUser.macrosRef!.mealGoals.length) {
+        mealGoal = MealGoal.fromHiveMealGoal(
+            hiveUser.macrosRef!.mealGoals[selectedRefeicaoIndex]);
+      }
     }
 
     bool controllerProteinMais = verificaAliMaisUm(tempSelectedFoodsProtein);
@@ -297,9 +319,9 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                 Navigator.of(context).pop();
               },
               style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                  ),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Confirmar'),
             ),
           ],

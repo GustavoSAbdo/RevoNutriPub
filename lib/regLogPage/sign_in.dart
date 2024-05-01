@@ -1,3 +1,6 @@
+import 'package:complete/hive/hive_meal_goal.dart';
+import 'package:complete/homePage/classes.dart';
+import 'package:complete/homePage/homePageItems/nutrition_service.dart';
 import 'package:complete/regLogPage/password_field.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:flutter/material.dart';
@@ -98,7 +101,17 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
         tmb: double.tryParse(userData['tmb']?.toString() ?? '0.0') ?? 0.0,
       );
 
-      // Salva os dados no Hive
+      MealGoal goal = NutritionService().calculateNutritionalGoals(hiveUser);
+
+      hiveUser.macrosDiarios = HiveMealGoal(
+          totalCalories: goal.totalCalories,
+          totalProtein: goal.totalProtein,
+          totalCarbs: goal.totalCarbs,
+          totalFats: goal.totalFats,
+        );
+
+      hiveUser.macrosRef = NutritionService().calculateRefGoals(hiveUser);
+       
       await userBox.put(userId, hiveUser);
     }
   }

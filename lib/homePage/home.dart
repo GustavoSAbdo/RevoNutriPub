@@ -29,7 +29,6 @@ class _HomePageState extends State<HomePage> {
   List<Refeicao> refeicoes = [];
   int? selectedRefeicaoIndex;
   int numRef = 0;
-  late MealGoal singleMealGoal;
 
   late int refPosTreino;
 
@@ -43,22 +42,6 @@ class _HomePageState extends State<HomePage> {
   double currentFats = 0;
 
   final NutritionService nutritionService = NutritionService();
-
-  MealGoal calculateMealGoalForSingleMeal(double totalCalories,
-      double totalProtein, double totalCarbs, double totalFats, int numRef) {
-    // Assegura que você tenha o total diário e o número de refeições
-    final double mealCalories = totalCalories / numRef;
-    final double mealProtein = totalProtein / numRef;
-    final double mealCarbs = totalCarbs / numRef;
-    final double mealFats = totalFats / numRef;
-
-    return MealGoal(
-      totalCalories: mealCalories,
-      totalProtein: mealProtein,
-      totalCarbs: mealCarbs,
-      totalFats: mealFats,
-    );
-  }
 
   Future<void> addFoodToRefeicao(
       int refeicaoIndex, FoodItem foodItem, double quantity) async {
@@ -141,12 +124,6 @@ class _HomePageState extends State<HomePage> {
         totalProtein = hiveUser.macrosDiarios?.totalProtein ?? 0;
         totalCarbs = hiveUser.macrosDiarios?.totalCarbs ?? 0;
         totalFats = hiveUser.macrosDiarios?.totalFats ?? 0;
-        singleMealGoal = calculateMealGoalForSingleMeal(
-            totalCalories, 
-            totalProtein, 
-            totalCarbs, 
-            totalFats, 
-            numRef);
       });
       await adjustRefeicaoBoxSize(numRef);
     }
@@ -387,7 +364,6 @@ class _HomePageState extends State<HomePage> {
           floatingActionButton: AddRemoveFoodWidget(
             userId: userId,
             onFoodAdded: addFoodToRefeicao,
-            mealGoal: singleMealGoal,
           ),
           body: SingleChildScrollView(
             child: Column(
