@@ -1,4 +1,5 @@
 import 'package:complete/homePage/classes.dart';
+import 'package:complete/homePage/homePageItems/feedback_user_dialog.dart';
 import 'package:complete/homePage/homePageItems/nutrition_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -110,27 +111,89 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchUserData() async {
-  User? user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    String uid = user.uid;
-    final userBox = Hive.box<HiveUser>('userBox');
-    HiveUser? hiveUser = userBox.get(uid);
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      String uid = user.uid;
+      final userBox = Hive.box<HiveUser>('userBox');
+      HiveUser? hiveUser = userBox.get(uid);
 
-    if (hiveUser != null) {
-      setState(() {
-        numRef = hiveUser.numRefeicoes;
-        refeicoes = List<Refeicao>.generate(numRef, (_) => Refeicao());        
-        totalCalories = hiveUser.macrosDiarios?.totalCalories ?? 0;
-        totalProtein = hiveUser.macrosDiarios?.totalProtein ?? 0;
-        totalCarbs = hiveUser.macrosDiarios?.totalCarbs ?? 0;
-        totalFats = hiveUser.macrosDiarios?.totalFats ?? 0;
-      });
-      await adjustRefeicaoBoxSize(numRef);
+      if (hiveUser != null) {
+        setState(() {
+          numRef = hiveUser.numRefeicoes;
+          refeicoes = List<Refeicao>.generate(numRef, (_) => Refeicao());
+          totalCalories = hiveUser.macrosDiarios?.totalCalories ?? 0;
+          totalProtein = hiveUser.macrosDiarios?.totalProtein ?? 0;
+          totalCarbs = hiveUser.macrosDiarios?.totalCarbs ?? 0;
+          totalFats = hiveUser.macrosDiarios?.totalFats ?? 0;
+          checkBirthday(hiveUser.dataNascimento);
+        });
+        await adjustRefeicaoBoxSize(numRef);
+      }
     }
   }
-}
 
+  Future<void> checkBirthday(DateTime birthDate) async {
+    final DateTime today = DateTime.now();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Recuperar a última data em que a mensagem de aniversário foi mostrada
+    String lastBirthdayShown = prefs.getString('lastBirthdayShown') ?? '';
 
+    // Checar se hoje é o aniversário do usuário e se a mensagem já foi mostrada neste ano
+    if (today.day == birthDate.day && today.month == birthDate.month) {
+      // Formatar a data de hoje como string para comparação e armazenamento
+      String formattedToday = "${today.year}-${today.month}-${today.day}";
+
+      if (lastBirthdayShown != formattedToday) {
+        User? user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          DocumentSnapshot userData = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+          if (userData.exists) {
+            Map<String, dynamic> userInfo =
+                userData.data() as Map<String, dynamic>;
+            String userName = toTitleCase(userInfo['nome'] ?? 'Usuário');
+            int userAge = userInfo['idade'] ?? 0;
+
+            // Exibir AlertDialog para o aniversário
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Feliz Aniversário!'),
+                  content: Text(
+                      'Olá $userName, gostariamos de lhe parabenizar pelos ${userAge + 1} anos! Nós da RevoNutri desejamos muitas felicidades e um ano maravilhoso pela frente.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        updateAgeInFirestore(user.uid, userAge + 1);
+                      },
+                      child: const Text('Obrigado(a)!'),
+                    ),
+                  ],
+                );
+              },
+            );
+
+            await prefs.setString('lastBirthdayShown', formattedToday);
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> updateAgeInFirestore(String userId, int newAge) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update({'idade': newAge});
+    } catch (e) {
+      print('Erro ao atualizar idade: $e');
+    }
+  }
 
   Future<void> adjustRefeicaoBoxSize(int newSize) async {
     final refeicaoBox = Provider.of<Box<HiveRefeicao>>(context, listen: false);
@@ -143,8 +206,7 @@ class _HomePageState extends State<HomePage> {
       await refeicaoBox.deleteAt(refeicaoBox.length - 1);
     }
 
-    setState(() {
-    });
+    setState(() {});
   }
 
   Future<void> checkAndResetRefeicoes() async {
@@ -175,10 +237,23 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-      
-    checkAndResetRefeicoes().then((_) {
-      fetchUserData().then((_) => loadRefeicoesFromHive());
-    });
+
+    _initAsync();
+  }
+
+  Future<void> _initAsync() async {
+    try {
+      await checkAndResetRefeicoes();
+      await fetchUserData();
+      await loadRefeicoesFromHive();
+    } catch (e) {
+      // Handle exceptions by logging or showing a user-friendly message
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> loadRefeicoesFromHive() async {
@@ -238,19 +313,52 @@ class _HomePageState extends State<HomePage> {
     return capitalizedWords.join(' ');
   }
 
+  void reloadRefeicoes() async {
+    await loadRefeicoesFromHive();
+    updateNutritionFromLoadedRefeicoes();
+  }
+
+  void updateNutritionFromLoadedRefeicoes() {
+    // Reseta os contadores para evitar duplicação ao somar
+    double newTotalCalories = 0;
+    double newTotalProtein = 0;
+    double newTotalCarbs = 0;
+    double newTotalFats = 0;
+
+    // Itera sobre cada refeição carregada e soma os valores nutricionais
+    for (Refeicao refeicao in refeicoes) {
+      for (FoodItem foodItem in refeicao.items) {
+        newTotalCalories += foodItem.calories;
+        newTotalProtein += foodItem.protein;
+        newTotalCarbs += foodItem.carbs;
+        newTotalFats += foodItem.fats;
+      }
+    }
+
+    // Atualiza o estado com os novos totais
+    setState(() {
+      currentCalories = newTotalCalories;
+      currentProtein = newTotalProtein;
+      currentCarbs = newTotalCarbs;
+      currentFats = newTotalFats;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
     final userBox = Hive.box<HiveUser>('userBox');
     HiveUser? hiveUser = userBox.get(userId);
     refPosTreino = hiveUser!.refeicaoPosTreino;
+    Box<HiveRefeicao> refeicaoBox =
+        Provider.of<Box<HiveRefeicao>>(context, listen: false);
     if (userId == null) {
       // Retorne um widget de erro ou redirecionamento aqui
       return const Scaffold(
         body: Center(child: Text("Usuário não identificado.")),
       );
     }
-    
+
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
       builder: (context, snapshot) {
@@ -269,9 +377,51 @@ class _HomePageState extends State<HomePage> {
         }
 
         // Se houver dados disponíveis, processa-os
-        Map<String, dynamic> userData =
-            snapshot.data!.data() as Map<String, dynamic>;
-        String userName = toTitleCase(userData['nome'] ?? 'Usuário');
+        String userName = toTitleCase(hiveUser.nome);
+
+        void showDataAlert(String routename) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Atenção!'),
+                content: const Text(
+                    'Você já possui refeições cadastradas. Se já tiver ingerido as refeições, recomendamos que espere o dia seguinte para alterar os dados. Caso queira prosseguir, aperte Continuar, porém iremos apagar suas refeições caso você faça alterações.'),
+                actions: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment
+                        .spaceEvenly, // Melhor distribuição dos botões
+                    children: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.pushNamed(context, routename);
+                        },
+                        child: const Text('Continuar'),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          );
+        }
+
+        bool checkForModifiedItems() {
+          return refeicaoBox.values.any((refeicao) => refeicao.modified);
+        }
+
+        void checkDataAndNavigate(String routeName) {
+          if (refeicaoBox.isNotEmpty && checkForModifiedItems()) {
+            showDataAlert(routeName);
+          } else {
+            Navigator.pushNamed(context, routeName);
+          }
+        }
 
         // Construção do layout principal com os dados atualizados
         return Scaffold(
@@ -315,47 +465,46 @@ class _HomePageState extends State<HomePage> {
                   leading: const Icon(Icons.account_circle),
                   title: const Text('Modificar dados pessoais'),
                   onTap: () {
-                    Navigator.pop(context); // Fecha o Drawer
-                    Navigator.pushNamed(context, '/registerDois');
+                    checkDataAndNavigate('/registerDois');
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.account_circle),
+                  leading: const Icon(Icons.settings),
                   title: const Text('Definir manualmente'),
                   onTap: () {
-                    Navigator.pop(context); // Fecha o Drawer
+                    Navigator.pop(context);
                     Navigator.pushNamed(context, '/macrosPage');
+                  },
+                ),
+                // ListTile(
+                //   leading: const Icon(Icons.paid),
+                //   title: const Text('Gerenciar assinatura'),
+                //   onTap: () {
+                //     print('${hiveUser.dataNascimento}');
+                //   },
+                // ),
+                ListTile(
+                  leading: const Icon(Icons.paid),
+                  title: const Text('Teste'),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return FeedbackUserDialog(); // Certifique-se de que este é o widget correto que você definiu
+                      },
+                    );
                   },
                 ),
                 ListTile(
                   leading: const Icon(Icons.exit_to_app),
                   title: const Text('Sair'),
                   onTap: () async {
-                    // Fecha o Drawer
-                    Navigator.pop(context);
-
-                    // Desloga o usuário
                     await FirebaseAuth.instance.signOut();
 
-                    // Verifica se o widget ainda está montado antes de prosseguir
                     if (mounted) {
-                      // Navega para a tela de login e remove todas as rotas anteriores
                       Navigator.pushNamedAndRemoveUntil(
                           context, '/login', (Route<dynamic> route) => false);
                     }
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text('Resetar Refeiçoes'),
-                  onTap: () async {
-                    final refeicaoBox =
-                        Provider.of<Box<HiveRefeicao>>(context, listen: false);
-                    await refeicaoBox.clear();
-
-                    Navigator.pop(context); // Fecha o Drawer
-                    // Navigator.pushNamed(
-                    //     context, '/profile'); // Navega para a página de perfil
                   },
                 ),
               ],
@@ -364,6 +513,7 @@ class _HomePageState extends State<HomePage> {
           floatingActionButton: AddRemoveFoodWidget(
             userId: userId,
             onFoodAdded: addFoodToRefeicao,
+            onRefeicaoChanged: reloadRefeicoes,
           ),
           body: SingleChildScrollView(
             child: Column(
@@ -376,9 +526,12 @@ class _HomePageState extends State<HomePage> {
                       currentProtein: currentProtein,
                       currentCarbs: currentCarbs,
                       currentFats: currentFats,
-                      totalCalories: mealGoalData.mealGoal?.totalCalories ?? totalCalories,
-                      totalProtein: mealGoalData.mealGoal?.totalProtein ?? totalProtein,
-                      totalCarbs: mealGoalData.mealGoal?.totalCarbs ?? totalCarbs,
+                      totalCalories:
+                          mealGoalData.mealGoal?.totalCalories ?? totalCalories,
+                      totalProtein:
+                          mealGoalData.mealGoal?.totalProtein ?? totalProtein,
+                      totalCarbs:
+                          mealGoalData.mealGoal?.totalCarbs ?? totalCarbs,
                       totalFats: mealGoalData.mealGoal?.totalFats ?? totalFats,
                     );
                   },

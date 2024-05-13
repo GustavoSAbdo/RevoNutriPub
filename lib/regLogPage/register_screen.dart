@@ -74,16 +74,6 @@ class _RegisterPageState extends State<RegisterPage> {
       // Recupera o UID do usuário recém-criado
       final String uid = userCredential.user!.uid;
 
-      // Calcula a idade a partir da data de nascimento
-      final DateTime today = DateTime.now();
-      final DateTime birthDate =
-          _selectedDate; // Supondo que _selectedDate seja a data de nascimento
-      int idade = today.year - birthDate.year;
-      if (birthDate.month > today.month ||
-          (birthDate.month == today.month && birthDate.day > today.day)) {
-        idade--;
-      }
-
       // Salva os dados adicionais do usuário no Firestore usando UID como chave
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'nome': _nomeController.text,
@@ -91,7 +81,10 @@ class _RegisterPageState extends State<RegisterPage> {
         'celular': _celularController.text,
         'genero':
             _selectedGender == Gender.masculino ? 'masculino' : 'feminino',
-        'idade': idade
+        'idade': calculateAge(
+            _selectedDate), // assuming calculateAge is a method you define to calculate age
+        'dataNascimento':
+            Timestamp.fromDate(_selectedDate) // Stores date as a Timestamp
       });
 
       // Registro bem-sucedido, exibe um AlertDialog
@@ -121,6 +114,17 @@ class _RegisterPageState extends State<RegisterPage> {
             'Erro', 'O email fornecido já está sendo usado por outra conta!');
       }
     }
+  }
+
+// Helper method to calculate age
+  int calculateAge(DateTime birthDate) {
+    DateTime today = DateTime.now();
+    int age = today.year - birthDate.year;
+    if (birthDate.month > today.month ||
+        (birthDate.month == today.month && birthDate.day > today.day)) {
+      age--;
+    }
+    return age;
   }
 
   void _showErrorDialog(String title, String message) {
@@ -153,8 +157,8 @@ class _RegisterPageState extends State<RegisterPage> {
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
-        _selectedDate = picked;
-        _dateController.text = DateFormat('dd/MM/yyyy').format(picked);
+        _selectedDate = DateTime.utc(picked.year, picked.month, picked.day);
+        _dateController.text = DateFormat('dd/MM/yyyy').format(_selectedDate);
       });
     }
   }
@@ -244,6 +248,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 readOnly: true, // torna o campo de texto somente leitura
                 onTap: () => _selectDate(context),
                 validator: (value) {
+                  print("Validating date: $value"); // Adds a debug statement
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira sua data de nascimento';
                   }
@@ -255,17 +260,16 @@ class _RegisterPageState extends State<RegisterPage> {
                     return 'Formato de data inválido. Use DD/MM/AAAA';
                   }
                   final DateTime today = DateTime.now();
-                  final int age = today.year - birthDate.year;
+                  int age = today.year - birthDate.year;
                   if (birthDate.month > today.month ||
                       (birthDate.month == today.month &&
                           birthDate.day > today.day)) {
-                    return 'Você deve ter pelo menos 12 anos';
+                    age--;
                   }
                   if (age < 12) {
                     return 'Você deve ter pelo menos 12 anos';
                   }
-                  // Retorna null se o valor passar na validação
-                  return null;
+                  return null; // Indicates the input is valid
                 },
               ),
               RadioListTile<Gender>(

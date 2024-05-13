@@ -16,11 +16,13 @@ import 'package:complete/hive/hive_meal_goal_list.dart';
 class AddRemoveFoodWidget extends StatefulWidget {
   final String userId;
   final Function(int, FoodItem, double) onFoodAdded;
+  final Function onRefeicaoChanged;
 
   const AddRemoveFoodWidget(
       {super.key,
       required this.userId,
-      required this.onFoodAdded});
+      required this.onFoodAdded,
+      required this.onRefeicaoChanged});
   @override
   _AddRemoveFoodWidgetState createState() => _AddRemoveFoodWidgetState();
 }
@@ -46,7 +48,6 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     final userBox = Hive.box<HiveUser>('userBox');
     HiveUser? hiveUser = userBox.get(user!.uid);
 
-    
     int refPosTreino = hiveUser!.refeicaoPosTreino;
 
     showDialog<int>(
@@ -326,6 +327,79 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
             ),
           ],
         );
+      },
+    );
+  }
+
+  void removeRefeicao(int index) {
+    Box<HiveRefeicao> refeicaoBox =
+        Provider.of<Box<HiveRefeicao>>(context, listen: false);
+    HiveRefeicao hiveRefeicao = refeicaoBox.getAt(index) ?? HiveRefeicao();
+
+    hiveRefeicao.items.clear(); 
+
+    refeicaoBox.putAt(index, hiveRefeicao);
+    widget.onRefeicaoChanged.call();
+  }
+
+  void showRemoveRefeicaoDialog() {
+    Box<HiveRefeicao> refeicaoBox =
+        Provider.of<Box<HiveRefeicao>>(context, listen: false);
+
+    showDialog<int>(
+      context: context,
+      builder: (BuildContext context) {
+        int?
+            tempSelectedRefeicao; // Estado local para armazenar a seleção temporária
+
+        return StatefulBuilder(
+            // Usando StatefulBuilder para gerenciar o estado local
+            builder: (BuildContext context, StateSetter setStateDialog) {
+          return AlertDialog(
+            title: const Text('Remover Refeição'),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: List<Widget>.generate(
+                  refeicaoBox.length,
+                  (i) {
+                    bool isRefeicaoNotEmpty =
+                        refeicaoBox.getAt(i)?.items.isNotEmpty ?? false;
+                    return isRefeicaoNotEmpty
+                        ? ListTile(
+                            title: Text('Refeição ${i + 1}'),
+                            leading: Radio<int>(
+                              value: i,
+                              groupValue: tempSelectedRefeicao,
+                              onChanged: (int? value) {
+                                setStateDialog(() {
+                                  // Atualiza o estado dentro do StatefulBuilder
+                                  tempSelectedRefeicao = value;
+                                });
+                              },
+                            ),
+                          )
+                        : Container();
+                  },
+                ).where((element) => element is! Container).toList(),
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (tempSelectedRefeicao != null) {
+                    removeRefeicao(tempSelectedRefeicao!);
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: const Text('Remover'),
+              ),
+            ],
+          );
+        });
       },
     );
   }
@@ -758,6 +832,8 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                         if (value == 'add') {
                           showRefeicaoDialog(numRef);
                         } else if (value == 'remove') {
+                          showRemoveRefeicaoDialog();
+                        } else if (value == 'removeOwn') {
                           foodDialogs!.showDeleteFoodDialog(context);
                         } else if (value == 'addOwn') {
                           foodDialogs!.showAddOwnFoodDialog();
@@ -770,11 +846,16 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                           child: Text('Adicionar Refeição'),
                         ),
                         const PopupMenuItem<String>(
+                          value: 'remove',
+                          child: Text(
+                              'Remover Refeição'), // Opção para remover refeição
+                        ),
+                        const PopupMenuItem<String>(
                           value: 'addOwn',
                           child: Text('Adicionar Alimento Próprio'),
                         ),
                         const PopupMenuItem<String>(
-                          value: 'remove',
+                          value: 'removeOwn',
                           child: Text('Remover Alimento Próprio'),
                         ),
                       ],

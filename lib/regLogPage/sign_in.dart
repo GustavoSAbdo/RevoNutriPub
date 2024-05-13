@@ -32,6 +32,7 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
           password: _passwordController.text.trim(),
         );
 
+        if (!mounted) return;
         // Assumindo que o login foi bem-sucedido, obtém os dados do usuário
         await fetchAndStoreUserData(userCredential.user!.uid);
 
@@ -41,6 +42,8 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
             .get();
         Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
         bool hasCompletedSecondaryRegistration = userData['regDois'] ?? false;
+
+        if (!mounted) return;
 
         if (hasCompletedSecondaryRegistration) {
           Navigator.of(context).pushReplacementNamed('/home');
@@ -55,6 +58,8 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
           await prefs.setBool('saveEmail', _saveEmail.value);
         }
       } on FirebaseAuthException catch (e) {
+        if (!mounted) return;
+
         String errorMessage;
         switch (e.code) {
           case 'invalid-credential':
@@ -85,6 +90,7 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
       hiveUser = HiveUser(
         altura: double.tryParse(userData['altura']?.toString() ?? '0.0') ?? 0.0,
         idade: int.tryParse(userData['idade']?.toString() ?? '0') ?? 0,
+        dataNascimento: (userData['dataNascimento'] as Timestamp).toDate(),
         multiplicadorGord: double.tryParse(
                 userData['multiplicadorGord']?.toString() ?? '0.0') ??
             0.0,
@@ -99,6 +105,8 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
         refeicaoPosTreino:
             int.tryParse(userData['refeicaoPosTreino']?.toString() ?? '0') ?? 0,
         tmb: double.tryParse(userData['tmb']?.toString() ?? '0.0') ?? 0.0,
+        nome: userData['nome'] as String,
+        genero: userData['genero'] as String
       );
 
       MealGoal goal = NutritionService().calculateNutritionalGoals(hiveUser);

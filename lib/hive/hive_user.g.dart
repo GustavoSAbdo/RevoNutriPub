@@ -19,47 +19,56 @@ class HiveUserAdapter extends TypeAdapter<HiveUser> {
     return HiveUser(
       altura: fields[0] as double,
       idade: fields[1] as int,
-      multiplicadorGord: fields[2] as double,
-      multiplicadorProt: fields[3] as double,
-      numRefeicoes: fields[4] as int,
-      peso: fields[5] as double,
-      nivelAtividade: fields[6] as String,
-      objetivo: fields[7] as String,
-      refeicaoPosTreino: fields[8] as int,
-      tmb: fields[9] as double,
-      macrosRef: fields[10] as HiveMealGoalList?,
-      macrosDiarios: fields[11] as HiveMealGoal?,
+      dataNascimento: fields[2] as DateTime,
+      multiplicadorGord: fields[3] as double,
+      multiplicadorProt: fields[4] as double,
+      numRefeicoes: fields[5] as int,
+      peso: fields[6] as double,
+      nivelAtividade: fields[7] as String,
+      objetivo: fields[8] as String,
+      refeicaoPosTreino: fields[9] as int,
+      tmb: fields[10] as double,
+      macrosRef: fields[11] as HiveMealGoalList?,
+      macrosDiarios: fields[12] as HiveMealGoal?,
+      nome: fields[13] as String,
+      genero: fields[14] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveUser obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.altura)
       ..writeByte(1)
       ..write(obj.idade)
       ..writeByte(2)
-      ..write(obj.multiplicadorGord)
+      ..write(obj.dataNascimento)
       ..writeByte(3)
-      ..write(obj.multiplicadorProt)
+      ..write(obj.multiplicadorGord)
       ..writeByte(4)
-      ..write(obj.numRefeicoes)
+      ..write(obj.multiplicadorProt)
       ..writeByte(5)
-      ..write(obj.peso)
+      ..write(obj.numRefeicoes)
       ..writeByte(6)
-      ..write(obj.nivelAtividade)
+      ..write(obj.peso)
       ..writeByte(7)
-      ..write(obj.objetivo)
+      ..write(obj.nivelAtividade)
       ..writeByte(8)
-      ..write(obj.refeicaoPosTreino)
+      ..write(obj.objetivo)
       ..writeByte(9)
-      ..write(obj.tmb)
+      ..write(obj.refeicaoPosTreino)
       ..writeByte(10)
-      ..write(obj.macrosRef)
+      ..write(obj.tmb)
       ..writeByte(11)
-      ..write(obj.macrosDiarios);
+      ..write(obj.macrosRef)
+      ..writeByte(12)
+      ..write(obj.macrosDiarios)
+      ..writeByte(13)
+      ..write(obj.nome)
+      ..writeByte(14)
+      ..write(obj.genero);
   }
 
   @override

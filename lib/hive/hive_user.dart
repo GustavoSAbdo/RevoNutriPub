@@ -2,50 +2,59 @@ import 'package:hive/hive.dart';
 import 'package:complete/hive/hive_meal_goal.dart';
 import 'package:complete/hive/hive_meal_goal_list.dart';
 
-
-part 'hive_user.g.dart'; 
+part 'hive_user.g.dart';
 
 @HiveType(typeId: 4)
 class HiveUser extends HiveObject {
   @HiveField(0)
-  double altura; 
+  double altura;
 
   @HiveField(1)
-  int idade; 
+  int idade;
 
   @HiveField(2)
-  double multiplicadorGord; 
+  DateTime dataNascimento;
 
   @HiveField(3)
-  double multiplicadorProt; 
+  double multiplicadorGord;
 
   @HiveField(4)
-  int numRefeicoes; 
+  double multiplicadorProt;
 
   @HiveField(5)
-  double peso; 
+  int numRefeicoes;
 
   @HiveField(6)
-  String nivelAtividade; 
+  double peso;
 
   @HiveField(7)
-  String objetivo; 
+  String nivelAtividade;
 
   @HiveField(8)
-  int refeicaoPosTreino; 
+  String objetivo;
 
   @HiveField(9)
-  double tmb; 
+  int refeicaoPosTreino;
 
   @HiveField(10)
-  HiveMealGoalList? macrosRef;
+  double tmb;
 
   @HiveField(11)
+  HiveMealGoalList? macrosRef;
+
+  @HiveField(12)
   HiveMealGoal? macrosDiarios;
+
+  @HiveField(13)
+  String nome;
+
+  @HiveField(14)
+  String genero;
 
   HiveUser({
     required this.altura,
     required this.idade,
+    required this.dataNascimento,
     required this.multiplicadorGord,
     required this.multiplicadorProt,
     required this.numRefeicoes,
@@ -56,5 +65,7 @@ class HiveUser extends HiveObject {
     required this.tmb,
     this.macrosRef,
     this.macrosDiarios,
+    required this.nome,
+    required this.genero,
   });
 }

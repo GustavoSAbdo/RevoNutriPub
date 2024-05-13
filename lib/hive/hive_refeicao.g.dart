@@ -18,7 +18,7 @@ class HiveRefeicaoAdapter extends TypeAdapter<HiveRefeicao> {
     };
     return HiveRefeicao(
       items: (fields[0] as List?)?.cast<HiveFoodItem>(),
-      modified: fields[1] as bool? ?? false ,
+      modified: fields[1] as bool,
     );
   }
 

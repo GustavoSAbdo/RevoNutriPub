@@ -1,3 +1,4 @@
+import 'package:complete/hive/hive_refeicao.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +7,7 @@ import 'package:hive/hive.dart';
 import 'package:complete/homePage/homePageItems/nutrition_service.dart';
 import 'package:complete/homePage/classes.dart';
 import 'package:complete/hive/hive_meal_goal.dart';
+import 'package:provider/provider.dart';
 
 class RegistroParteDois extends StatefulWidget {
   const RegistroParteDois({super.key});
@@ -25,7 +27,8 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
   String textoNivelAtividade = '';
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _alturaController = TextEditingController();
-  bool _isLoading = false;
+  final bool _isLoading = false;
+  Map<String, dynamic> initialData = {};
 
   @override
   void dispose() {
@@ -34,7 +37,6 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
     super.dispose();
   }
 
-  
   final NutritionService nutritionService = NutritionService();
 
   void _showObjetivoDialog() {
@@ -231,7 +233,7 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Selecione a refeição pós-treino'),          
+          title: const Text('Selecione a refeição pós-treino'),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
@@ -266,8 +268,11 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
 
         // Pega os dados necessários do usuário
         String genero = userData['genero'];
+        String nome = userData['nome'];
         double peso = double.tryParse(_pesoController.text) ?? 0.0;
         double altura = double.tryParse(_alturaController.text) ?? 0.0;
+        DateTime dataNascimento =
+            (userData['dataNascimento'] as Timestamp).toDate();
         int idade = int.tryParse(userData['idade'].toString()) ?? 0;
         int numRefeicoes = int.tryParse(_numRefeicoes.toString()) ?? 0;
         double multiplicadorProt =
@@ -282,11 +287,10 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
         // Calcula o TMB
         double tmb = calcularTMB(genero, peso, altura, idade);
 
-        
-
         HiveUser newUser = HiveUser(
           altura: altura,
           idade: idade,
+          dataNascimento: dataNascimento,
           multiplicadorGord: multiplicadorGord,
           multiplicadorProt: multiplicadorProt,
           numRefeicoes: numRefeicoes,
@@ -295,6 +299,8 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
           objetivo: objetivo,
           refeicaoPosTreino: refeicaoPosTreino,
           tmb: tmb,
+          nome: nome,
+          genero: genero
         );
 
         MealGoal goal = NutritionService().calculateNutritionalGoals(newUser);
@@ -305,13 +311,12 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
           totalCarbs: goal.totalCarbs,
           totalFats: goal.totalFats,
         );
-        
-        newUser.macrosRef = nutritionService.calculateRefGoals(newUser);        
+
+        newUser.macrosRef = nutritionService.calculateRefGoals(newUser);
 
         // Salva no Hive
         final userBox = Hive.box<HiveUser>('userBox');
         await userBox.put(uid, newUser);
-        
 
         // Atualiza os dados no Firestore
         await FirebaseFirestore.instance.collection('users').doc(uid).update({
@@ -342,7 +347,29 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    _fetchUserData().then((_) {
+      initialData = {
+        'peso': _pesoController.text,
+        'altura': _alturaController.text,
+        'numRefeicoes': _numRefeicoes,
+        'nivelAtividade': _nivelAtividade,
+        'objetivo': _objetivo,
+        'multiplicadorProt': _multiplicadorProt,
+        'multiplicadorGord': _multiplicadorGord,
+        'refeicaoPosTreino': _refeicaoPosTreino,
+      };
+    });
+  }
+
+  bool _hasDataChanged() {
+    return _pesoController.text != initialData['peso'] ||
+        _alturaController.text != initialData['altura'] ||
+        _numRefeicoes != initialData['numRefeicoes'] ||
+        _nivelAtividade != initialData['nivelAtividade'] ||
+        _objetivo != initialData['objetivo'] ||
+        _multiplicadorProt != initialData['multiplicadorProt'] ||
+        _multiplicadorGord != initialData['multiplicadorGord'] ||
+        _refeicaoPosTreino != initialData['refeicaoPosTreino'];
   }
 
   Future<void> _fetchUserData() async {
@@ -437,7 +464,7 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                 ),
                 const SizedBox(height: 20),
                 const Text('Refeição pós treino:'),
-                ElevatedButton(                  
+                ElevatedButton(
                   onPressed: _showRefeicaoPosTreinoDialog,
                   child: Text(_refeicaoPosTreino == 0
                       ? 'Selecionar'
@@ -452,14 +479,46 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                       : textoNivelAtividade),
                 ),
                 const SizedBox(height: 20),
-                const Text('Objetivo:'),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text('Objetivo:'),
+                    ),
+                    Tooltip(
+                      message:
+                          'Não recomendamos os objetivos perder peso agressivamente e ganhar peso agressivamente por longos períodos.',
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(8)),
+                      textStyle: const TextStyle(color: Colors.white),
+                      child: Icon(Icons.info_outline,
+                          color: Theme.of(context).colorScheme.primary),
+                    ),
+                  ],
+                ),
                 ElevatedButton(
                   onPressed: _showObjetivoDialog,
                   child: Text(_objetivo.isEmpty ? 'Selecionar' : textoObjetivo),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                    'Quantos gramas de proteina por KG você quer comer?'),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                          'Quantos gramas de proteína por KG você quer comer?'),
+                    ),
+                    Tooltip(
+                      message:
+                          'Para dieta de perda de peso, recomendamos a utilização de 2.0 a 2.5 gramas de proteína por KG para praticantes de musculação, e 1.2 a 1.5 para não praticantes. Para dietas de ganhar e manter peso, recomendamos 1.8 a 2.2 gramas de proteína por KG para praticantes de musculação, e 1 a 1.2 para não praticantes.',
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(8)),
+                      textStyle: const TextStyle(color: Colors.white),
+                      child: Icon(Icons.info_outline,
+                          color: Theme.of(context).colorScheme.primary),
+                    ),
+                  ],
+                ),
                 Slider(
                   min: 1,
                   max: 5,
@@ -472,11 +531,29 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                     });
                   },
                 ),
-                const Text('Quantos gramas de gordura por KG você quer comer?'),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                          'Quantos gramas de gordura por KG você quer comer?'),
+                    ),
+                    Tooltip(
+                      message:
+                          'Recomendamos a utilização de 0.8 a 1.2 gramas de gordura por KG.',
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(8)),
+                      textStyle: const TextStyle(color: Colors.white),
+                      child: Icon(Icons.info_outline,
+                          color: Theme.of(context).colorScheme.primary),
+                    ),
+                  ],
+                ),
                 Slider(
                   min: 0.3,
-                  max: 1.2,
-                  divisions: 9,
+                  max: 1.5,
+                  divisions: 12,
                   label: _multiplicadorGord.toStringAsFixed(1),
                   value: _multiplicadorGord,
                   onChanged: (double value) {
@@ -496,6 +573,22 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                           : () {
                               if (_formKey.currentState?.validate() ?? false) {
                                 _cadastrarDados();
+
+                                if (_hasDataChanged()) {
+                                  Box<HiveRefeicao> refeicaoBox =
+                                      Provider.of<Box<HiveRefeicao>>(context,
+                                          listen: false);
+
+                                  bool checkForModifiedItems() {
+                                    return refeicaoBox.values
+                                        .any((refeicao) => refeicao.modified);
+                                  }
+
+                                  if (refeicaoBox.isNotEmpty &&
+                                      checkForModifiedItems()) {
+                                    refeicaoBox.clear();
+                                  }
+                                }
                               }
                             },
                       style: ElevatedButton.styleFrom(

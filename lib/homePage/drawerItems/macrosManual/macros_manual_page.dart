@@ -11,13 +11,13 @@ class MacrosManualPage extends StatelessWidget {
     Box<HiveRefeicao> refeicaoBox =
                     Provider.of<Box<HiveRefeicao>>(context, listen: false);
 
-    void showDataAlert() {
+    void showDataAlert(String routename ) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Atenção!'),
-            content: const Text('Você já possui refeições cadastradas. Se já tiver ingerido as refeições, recomendamos que espere o dia seguinte para alterar os macros. Caso queira prosseguir, aperte Continuar, porém iremos apagar suas refeições.'),
+            content: const Text('Você já possui refeições cadastradas. Se já tiver ingerido as refeições, recomendamos que espere o dia seguinte para alterar os dados. Caso queira prosseguir, aperte Continuar, porém iremos apagar suas refeições.'),
             actions: <Widget>[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Melhor distribuição dos botões
@@ -29,7 +29,7 @@ class MacrosManualPage extends StatelessWidget {
                   TextButton(
                     onPressed: () {
                       refeicaoBox.clear();
-                      Navigator.pushNamed(context, '/macrosDaDietaManualmente');
+                      Navigator.pushNamed(context, routename);
                     },
                     child: const Text('Continuar'),
                   ),
@@ -47,7 +47,7 @@ class MacrosManualPage extends StatelessWidget {
 
     void checkDataAndNavigate(String routeName) {
       if (refeicaoBox.isNotEmpty && checkForModifiedItems()) {
-        showDataAlert();
+        showDataAlert(routeName);
       } else {
         Navigator.pushNamed(context, routeName);
       }
