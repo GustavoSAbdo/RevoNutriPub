@@ -27,7 +27,9 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
   String textoNivelAtividade = '';
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _alturaController = TextEditingController();
-  final bool _isLoading = false;
+  bool _isLoading = false;
+  bool _readOnlyPeso = false;
+  bool _readOnlyAltura = false;
   Map<String, dynamic> initialData = {};
 
   @override
@@ -48,18 +50,6 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                RadioListTile<String>(
-                  title: const Text('Perder peso agressivamente'),
-                  value: 'perderPesoAgressivamente',
-                  groupValue: _objetivo,
-                  onChanged: (value) {
-                    setState(() {
-                      _objetivo = value!;
-                      textoObjetivo = "Perder peso agressivamente";
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
                 RadioListTile<String>(
                   title: const Text('Perder peso'),
                   value: 'perderPeso',
@@ -96,18 +86,6 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                     Navigator.pop(context);
                   },
                 ),
-                RadioListTile<String>(
-                  title: const Text('Ganhar peso agressivamente'),
-                  value: 'ganharPesoAgressivamente',
-                  groupValue: _objetivo,
-                  onChanged: (value) {
-                    setState(() {
-                      _objetivo = value!;
-                      textoObjetivo = "Ganhar peso agressivamente";
-                    });
-                    Navigator.pop(context);
-                  },
-                ),
               ],
             ),
           ),
@@ -123,16 +101,12 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
   }
 
   void _textoObjetivo(objetivo) {
-    if (_objetivo == 'perderPesoAgressivamente') {
-      textoObjetivo = "Perder peso agressivamente";
-    } else if (_objetivo == 'perderPeso') {
+    if (_objetivo == 'perderPeso') {
       textoObjetivo = "Perder peso";
     } else if (_objetivo == 'manterPeso') {
       textoObjetivo = "Manter peso";
     } else if (_objetivo == 'ganharPeso') {
       textoObjetivo = "Ganhar peso";
-    } else if (_objetivo == 'ganharPesoAgressivamente') {
-      textoObjetivo = "Ganhar peso agressivamente";
     }
   }
 
@@ -284,24 +258,36 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
         int refeicaoPosTreino =
             int.tryParse(_refeicaoPosTreino.toString()) ?? 0;
 
-        // Calcula o TMB
         double tmb = calcularTMB(genero, peso, altura, idade);
 
+        final now = DateTime.now();
+        DateTime lastFeedbackDate;
+
+        if (now.hour < 10) {
+          lastFeedbackDate = DateTime(now.year, now.month, now.day);
+        } else {
+          final nextDay = now.add(const Duration(days: 1));
+          lastFeedbackDate = DateTime(nextDay.year, nextDay.month, nextDay.day);
+        }
+
+        DateTime lastObjectiveChange = DateTime(now.year, now.month, now.day);
+
         HiveUser newUser = HiveUser(
-          altura: altura,
-          idade: idade,
-          dataNascimento: dataNascimento,
-          multiplicadorGord: multiplicadorGord,
-          multiplicadorProt: multiplicadorProt,
-          numRefeicoes: numRefeicoes,
-          peso: peso,
-          nivelAtividade: nivelAtividade,
-          objetivo: objetivo,
-          refeicaoPosTreino: refeicaoPosTreino,
-          tmb: tmb,
-          nome: nome,
-          genero: genero
-        );
+            altura: altura,
+            idade: idade,
+            dataNascimento: dataNascimento,
+            multiplicadorGord: multiplicadorGord,
+            multiplicadorProt: multiplicadorProt,
+            numRefeicoes: numRefeicoes,
+            peso: peso,
+            nivelAtividade: nivelAtividade,
+            objetivo: objetivo,
+            refeicaoPosTreino: refeicaoPosTreino,
+            tmb: tmb,
+            nome: nome,
+            genero: genero,
+            lastFeedbackDate: lastFeedbackDate,
+            lastObjectiveChange: lastObjectiveChange);
 
         MealGoal goal = NutritionService().calculateNutritionalGoals(newUser);
 
@@ -329,6 +315,8 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
           'peso': peso,
           'altura': altura,
           'refeicaoPosTreino': refeicaoPosTreino,
+          'lastFeedbackDate': Timestamp.fromDate(lastFeedbackDate),
+          'lastObjectiveChange': Timestamp.fromDate(lastObjectiveChange),
           'regDois': true
         }).then((_) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -342,6 +330,189 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
         });
       }
     }
+  }
+
+  Future<void> _updateDados() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final userBox = Hive.box<HiveUser>('userBox');
+      HiveUser? existingUser = userBox.get(uid);
+
+      if (existingUser != null) {
+        bool hasDataChanged = _hasDataChanged();
+
+        if (hasDataChanged) {
+          final now = DateTime.now();
+          DateTime lastFeedbackDate;
+
+          if (now.hour < 10) {
+            lastFeedbackDate = DateTime(now.year, now.month, now.day);
+          } else {
+            final nextDay = now.add(const Duration(days: 1));
+            lastFeedbackDate =
+                DateTime(nextDay.year, nextDay.month, nextDay.day);
+          }
+
+          if (existingUser.objetivo != _objetivo) {
+            DateTime? lastObjectiveChange = existingUser.lastObjectiveChange;
+            if (lastObjectiveChange != null &&
+                now.difference(lastObjectiveChange).inDays < 60) {
+              _showConfirmationDialog(() async {
+                MealGoal updatedGoals = nutritionService.updateNutritionObj(
+                    existingUser, _objetivo);
+                existingUser.lastObjectiveChange =
+                    DateTime(now.year, now.month, now.day);
+
+                existingUser.macrosDiarios = HiveMealGoal(
+                  totalCalories: updatedGoals.totalCalories,
+                  totalProtein: updatedGoals.totalProtein,
+                  totalCarbs: updatedGoals.totalCarbs,
+                  totalFats: updatedGoals.totalFats,
+                );
+
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(uid)
+                    .update({
+                  'macrosDiarios': {
+                    'totalCalories': updatedGoals.totalCalories,
+                    'totalProtein': updatedGoals.totalProtein,
+                    'totalCarbs': updatedGoals.totalCarbs,
+                    'totalFats': updatedGoals.totalFats,
+                  },
+                  'lastObjectiveChange': Timestamp.fromDate(now),
+                });
+
+                await _updateUserDetails(existingUser, lastFeedbackDate);
+              });
+              return;
+            } else {
+              MealGoal updatedGoals =
+                  nutritionService.updateNutritionObj(existingUser, _objetivo);
+              existingUser.lastObjectiveChange =
+                  DateTime(now.year, now.month, now.day);
+
+              existingUser.macrosDiarios = HiveMealGoal(
+                totalCalories: updatedGoals.totalCalories,
+                totalProtein: updatedGoals.totalProtein,
+                totalCarbs: updatedGoals.totalCarbs,
+                totalFats: updatedGoals.totalFats,
+              );
+
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(uid)
+                  .update({
+                'macrosDiarios': {
+                  'totalCalories': updatedGoals.totalCalories,
+                  'totalProtein': updatedGoals.totalProtein,
+                  'totalCarbs': updatedGoals.totalCarbs,
+                  'totalFats': updatedGoals.totalFats,
+                },
+                'lastObjectiveChange': Timestamp.fromDate(now),
+              });
+            }
+          }
+
+          if (existingUser.nivelAtividade != _nivelAtividade) {
+            MealGoal updatedGoals = nutritionService
+                .updateNutritionOnActivityChange(existingUser, _nivelAtividade);
+
+            existingUser.macrosDiarios = HiveMealGoal(
+              totalCalories: updatedGoals.totalCalories,
+              totalProtein: updatedGoals.totalProtein,
+              totalCarbs: updatedGoals.totalCarbs,
+              totalFats: updatedGoals.totalFats,
+            );
+
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .update({
+              'nivelAtividade': _nivelAtividade,
+              'macrosDiarios': {
+                'totalCalories': updatedGoals.totalCalories,
+                'totalProtein': updatedGoals.totalProtein,
+                'totalCarbs': updatedGoals.totalCarbs,
+                'totalFats': updatedGoals.totalFats,
+              },
+            });
+          }
+
+          await _updateUserDetails(existingUser, lastFeedbackDate);
+        }
+      } else {
+        await _cadastrarDados();
+      }
+    }
+  }
+
+  Future<void> _updateUserDetails(
+      HiveUser existingUser, DateTime lastFeedbackDate) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final userBox = Hive.box<HiveUser>('userBox');
+
+    existingUser
+      ..peso = double.tryParse(_pesoController.text) ?? existingUser.peso
+      ..altura = double.tryParse(_alturaController.text) ?? existingUser.altura
+      ..numRefeicoes = _numRefeicoes
+      ..nivelAtividade = _nivelAtividade
+      ..objetivo = _objetivo
+      ..multiplicadorProt = _multiplicadorProt
+      ..multiplicadorGord = _multiplicadorGord
+      ..refeicaoPosTreino = _refeicaoPosTreino
+      ..lastFeedbackDate = lastFeedbackDate;
+
+    await userBox.put(uid, existingUser);
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'peso': existingUser.peso,
+      'altura': existingUser.altura,
+      'numRefeicoes': existingUser.numRefeicoes,
+      'nivelAtividade': existingUser.nivelAtividade,
+      'objetivo': existingUser.objetivo,
+      'multiplicadorProt': existingUser.multiplicadorProt,
+      'multiplicadorGord': existingUser.multiplicadorGord.toStringAsFixed(1),
+      'refeicaoPosTreino': existingUser.refeicaoPosTreino,
+      'lastFeedbackDate': Timestamp.fromDate(lastFeedbackDate),
+    }).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dados atualizados com sucesso!')),
+      );
+      Navigator.pushReplacementNamed(context, '/home');
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao atualizar dados: $error')),
+      );
+    });
+  }
+
+  void _showConfirmationDialog(Function onConfirm) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Atenção'),
+          content: const Text(
+              'Você alterou seu objetivo recentemente. A gente recomenda manter por pelo menos dois meses para alterá-lo novamente. Deseja prosseguir mesmo assim?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Não'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Sim'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                onConfirm();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -388,6 +559,8 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
         _multiplicadorProt = user.multiplicadorProt;
         _multiplicadorGord = user.multiplicadorGord;
         _refeicaoPosTreino = user.refeicaoPosTreino;
+        _readOnlyPeso = user.peso != 0;
+        _readOnlyAltura = (user.altura != 0 && user.idade >= 21);
         setState(() {});
       }
     }
@@ -411,6 +584,8 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
               children: [
                 TextFormField(
                   controller: _alturaController,
+                  enabled:
+                      !_readOnlyAltura, // Controle de edição baseado em idade e dados existentes
                   decoration: const InputDecoration(
                       labelText: 'Altura (cm)', hintText: 'Digite sua altura'),
                   keyboardType: TextInputType.number,
@@ -430,6 +605,8 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                 const SizedBox(height: 20),
                 TextFormField(
                   controller: _pesoController,
+                  enabled:
+                      !_readOnlyPeso, // Controle de edição baseado em dados existentes
                   decoration: const InputDecoration(
                       labelText: 'Peso (kg)',
                       hintText: 'Digite seu peso atual'),
@@ -479,20 +656,10 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                       : textoNivelAtividade),
                 ),
                 const SizedBox(height: 20),
-                Row(
+                const Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text('Objetivo:'),
-                    ),
-                    Tooltip(
-                      message:
-                          'Não recomendamos os objetivos perder peso agressivamente e ganhar peso agressivamente por longos períodos.',
-                      decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(8)),
-                      textStyle: const TextStyle(color: Colors.white),
-                      child: Icon(Icons.info_outline,
-                          color: Theme.of(context).colorScheme.primary),
                     ),
                   ],
                 ),
@@ -572,7 +739,7 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
                           ? null
                           : () {
                               if (_formKey.currentState?.validate() ?? false) {
-                                _cadastrarDados();
+                                _updateDados();
 
                                 if (_hasDataChanged()) {
                                   Box<HiveRefeicao> refeicaoBox =

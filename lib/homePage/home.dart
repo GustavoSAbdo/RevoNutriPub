@@ -246,10 +246,38 @@ class _HomePageState extends State<HomePage> {
       await checkAndResetRefeicoes();
       await fetchUserData();
       await loadRefeicoesFromHive();
+      await checkLastFeedbackDate();
     } catch (e) {
       // Handle exceptions by logging or showing a user-friendly message
     }
   }
+
+  Future<void> checkLastFeedbackDate() async {
+  final userBox = Hive.box<HiveUser>('userBox');
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+
+  if (uid != null) {
+    HiveUser? hiveUser = userBox.get(uid);
+
+    if (hiveUser != null && hiveUser.lastFeedbackDate != null) {
+      final lastFeedbackDate = hiveUser.lastFeedbackDate!;
+      final normalizedLastFeedbackDate = DateTime(lastFeedbackDate.year, lastFeedbackDate.month, lastFeedbackDate.day);
+
+      final now = DateTime.now();
+      final normalizedNow = DateTime(now.year, now.month, now.day);
+
+      if (normalizedNow.difference(normalizedLastFeedbackDate).inDays >= 15) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return FeedbackUserDialog(); 
+          },
+        );
+      }
+    }
+  }
+}
+
 
   @override
   void dispose() {

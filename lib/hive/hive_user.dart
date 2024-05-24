@@ -51,6 +51,12 @@ class HiveUser extends HiveObject {
   @HiveField(14)
   String genero;
 
+  @HiveField(15)
+  DateTime? lastFeedbackDate;
+
+  @HiveField(16)
+  DateTime? lastObjectiveChange;
+
   HiveUser({
     required this.altura,
     required this.idade,
@@ -67,5 +73,7 @@ class HiveUser extends HiveObject {
     this.macrosDiarios,
     required this.nome,
     required this.genero,
+    this.lastFeedbackDate,
+    this.lastObjectiveChange
   });
 }

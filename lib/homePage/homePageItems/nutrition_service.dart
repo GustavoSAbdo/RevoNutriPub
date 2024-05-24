@@ -23,14 +23,8 @@ class NutritionService {
       case 'manterPeso':
         coeficiente = 1;
         break;
-      case 'perderPesoAgressivamente':
-        coeficiente = 0.7;
-        break;
       case 'perderPeso':
         coeficiente = 0.85;
-        break;
-      case 'ganharPesoAgressivamente':
-        coeficiente = 1.15;
         break;
       case 'ganharPeso':
         coeficiente = 1.07;
@@ -50,8 +44,11 @@ class NutritionService {
       case 'muitoAtivo':
         totalCalories = tmb * 1.55 * coeficiente;
         break;
-      default:
+      case 'extremamenteAtivo':
         totalCalories = tmb * 1.8 * coeficiente;
+        break;
+      default:
+        totalCalories = tmb * coeficiente;
         break;
     }
 
@@ -116,7 +113,7 @@ class NutritionService {
       double carbsAdjustment = carbsPerMeal * 0.1;
 
       for (int i = 0; i < qtdRef; i++) {
-        if (i+1 == refPosTreino) {
+        if (i + 1 == refPosTreino) {
           mealGoals[i].totalFats -= fatsAdjustment;
           mealGoals[i].totalProtein += protAdjustment;
           mealGoals[i].totalCarbs += carbsAdjustment;
@@ -134,5 +131,96 @@ class NutritionService {
     }
 
     return HiveMealGoalList(mealGoals: userMealGoalsList);
+  }
+
+  MealGoal updateNutritionObj(HiveUser user, objetivoNovo) {
+    double totalFats = user.macrosDiarios!.totalFats;
+    double totalCalories;
+    double totalProtein = user.macrosDiarios!.totalProtein;
+    late double totalCarbs;
+    String objetivoAtual = user.objetivo;
+    double peso = user.peso;
+    double carboidrato = user.macrosDiarios!.totalCarbs;
+
+    if (objetivoAtual == 'perderPeso') {
+      if (objetivoNovo == 'ganharPeso') {
+        totalCarbs = carboidrato + peso;
+      } else if (objetivoNovo == 'manterPeso') {
+        totalCarbs = carboidrato + (peso * 0.5);
+      } else {
+        totalCarbs = carboidrato;
+      }
+    } else if (objetivoAtual == 'ganharPeso') {
+      if (objetivoNovo == 'perderPeso') {
+        totalCarbs = carboidrato - peso;
+      } else if (objetivoNovo == 'manterPeso') {
+        totalCarbs = carboidrato - (peso * 0.5);
+      } else {
+        totalCarbs = carboidrato;
+      }
+    } else {
+      if (objetivoNovo == 'perderPeso') {
+        totalCarbs = carboidrato - (peso * 0.5);
+      } else if (objetivoNovo == 'ganharPeso') {
+        totalCarbs = carboidrato + (peso * 0.5);
+      } else {
+        totalCarbs = carboidrato;
+      }
+    }
+
+    totalCalories = (totalProtein * 4) + (totalCarbs * 4) + (totalFats * 9);
+
+    return MealGoal(
+      totalCalories: totalCalories,
+      totalProtein: totalProtein,
+      totalCarbs: totalCarbs,
+      totalFats: totalFats,
+    );
+  }
+
+  MealGoal updateNutritionOnActivityChange(
+      HiveUser user, String novoNivelAtividade) {
+    double totalFats = user.macrosDiarios!.totalFats;
+    double totalCalories;
+    double totalProtein = user.macrosDiarios!.totalProtein;
+    late double totalCarbs;
+
+    double getActivityFactor(String nivelAtividade) {
+      switch (nivelAtividade) {
+        case 'sedentario':
+          return 1.2;
+        case 'atividadeLeve':
+          return 1.3;
+        case 'atividadeModerada':
+          return 1.42;
+        case 'muitoAtivo':
+          return 1.55;
+        case 'extremamenteAtivo':
+          return 1.8;
+        default:
+          return 1.0;
+      }
+    }
+
+    double fatorAtual = getActivityFactor(user.nivelAtividade);
+    double fatorNovo = getActivityFactor(novoNivelAtividade);
+
+    totalCalories =
+        (user.macrosDiarios!.totalCalories / fatorAtual) * fatorNovo;
+
+    if (totalCalories > user.macrosDiarios!.totalCalories) {
+      totalCarbs = user.macrosDiarios!.totalCarbs +
+          (totalCalories - user.macrosDiarios!.totalCalories) / 4;
+    } else {
+      totalCarbs = user.macrosDiarios!.totalCarbs -
+          (user.macrosDiarios!.totalCalories - totalCalories) / 4;
+    }
+
+    return MealGoal(
+      totalCalories: totalCalories,
+      totalProtein: totalProtein,
+      totalCarbs: totalCarbs,
+      totalFats: totalFats,
+    );
   }
 }

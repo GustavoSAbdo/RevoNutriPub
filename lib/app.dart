@@ -1,3 +1,4 @@
+import 'package:complete/homePage/homePageItems/feedback_user_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -79,6 +80,7 @@ class MyApp extends StatelessWidget {
         '/macrosDaDietaManualmente': (context) => const MealGoalFormPage(),
         '/macrosPage': (context) => const MacrosManualPage(),
         '/macrosRefPage': (context) => MealInputPage(),
+        '/feedbackPage' : (context) => FeedbackUserDialog(),
       },
     );
   }

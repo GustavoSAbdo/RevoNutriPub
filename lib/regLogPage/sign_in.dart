@@ -106,20 +106,41 @@ class _CustomSignInScreenState extends State<CustomSignInScreen> {
             int.tryParse(userData['refeicaoPosTreino']?.toString() ?? '0') ?? 0,
         tmb: double.tryParse(userData['tmb']?.toString() ?? '0.0') ?? 0.0,
         nome: userData['nome'] as String,
-        genero: userData['genero'] as String
+        genero: userData['genero'] as String,
+        lastFeedbackDate: userData['lastFeedbackDate'] != null
+            ? (userData['lastFeedbackDate'] as Timestamp).toDate()
+            : null,
       );
 
-      MealGoal goal = NutritionService().calculateNutritionalGoals(hiveUser);
-
-      hiveUser.macrosDiarios = HiveMealGoal(
+      if (userData.containsKey('macrosDiarios') &&
+          userData['macrosDiarios'] != null) {
+        var macrosData = userData['macrosDiarios'] as Map<String, dynamic>;
+        hiveUser.macrosDiarios = HiveMealGoal(
+          totalCalories: double.tryParse(
+                  macrosData['totalCalories']?.toString() ?? '0.0') ??
+              0.0,
+          totalProtein: double.tryParse(
+                  macrosData['totalProtein']?.toString() ?? '0.0') ??
+              0.0,
+          totalCarbs:
+              double.tryParse(macrosData['totalCarbs']?.toString() ?? '0.0') ??
+                  0.0,
+          totalFats:
+              double.tryParse(macrosData['totalFats']?.toString() ?? '0.0') ??
+                  0.0,
+        );
+      } else {
+        MealGoal goal = NutritionService().calculateNutritionalGoals(hiveUser);
+        hiveUser.macrosDiarios = HiveMealGoal(
           totalCalories: goal.totalCalories,
           totalProtein: goal.totalProtein,
           totalCarbs: goal.totalCarbs,
           totalFats: goal.totalFats,
         );
+      }
 
       hiveUser.macrosRef = NutritionService().calculateRefGoals(hiveUser);
-       
+
       await userBox.put(userId, hiveUser);
     }
   }
