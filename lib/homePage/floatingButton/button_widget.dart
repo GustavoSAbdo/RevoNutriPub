@@ -12,6 +12,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:complete/hive/hive_refeicao.dart';
 import 'package:complete/hive/hive_meal_goal_list.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddRemoveFoodWidget extends StatefulWidget {
   final String userId;
@@ -38,7 +39,120 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
   List<FoodItemWithQuantity> allSelectedFoodsWithQuantities = [];
   Offset position = const Offset(0, 0);
 
-  void showRefeicaoDialog(int numRef) {
+  Future<void> _showSuggestionsDialog(int numRef) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool? dontShowAgain = prefs.getBool('dontShowSuggestionsDialog') ?? false;
+
+    if (dontShowAgain) {
+      _showRefeicaoDialog(numRef);
+      return;
+    }
+
+    bool dontShowAgainValue = false;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Sugestões'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Exemplos de alimentos em que as calorias são majoritariamente fonte de carboidratos: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'macarrão, arroz, banana, feijão, etc...',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Exemplos de alimentos em que as calorias são majoritariamente fonte de proteína: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'frango peito, carne bovina patinho, porco lombo, etc...',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Exemplos de alimentos em que as calorias são majoritariamente fonte de gordura: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'azeite, amendoim, castanha, abacate, ovo, etc...',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Obs.: ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'Recomendamos fortemente a ingestão de legumes, frutas e vegetais. Você pode consumir vegetais à vontade, sem precisar calcular no aplicativo.',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: dontShowAgainValue,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              dontShowAgainValue = value!;
+                            });
+                          },
+                        ),
+                        const Text("Não mostrar novamente"),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('OK'),
+                  onPressed: () {
+                    if (dontShowAgainValue) {
+                      prefs.setBool('dontShowSuggestionsDialog', true);
+                    }
+                    Navigator.of(context).pop();
+                    _showRefeicaoDialog(numRef);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showRefeicaoDialog(int numRef) {
     int? selectedRefeicao;
 
     Box<HiveRefeicao> refeicaoBox =
@@ -342,7 +456,7 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     widget.onRefeicaoChanged.call();
   }
 
-  void showRemoveRefeicaoDialog() {
+  void _showRemoveRefeicaoDialog() {
     Box<HiveRefeicao> refeicaoBox =
         Provider.of<Box<HiveRefeicao>>(context, listen: false);
 
@@ -830,9 +944,9 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                     child: PopupMenuButton<String>(
                       onSelected: (String value) {
                         if (value == 'add') {
-                          showRefeicaoDialog(numRef);
+                          _showSuggestionsDialog(numRef);
                         } else if (value == 'remove') {
-                          showRemoveRefeicaoDialog();
+                          _showRemoveRefeicaoDialog();
                         } else if (value == 'removeOwn') {
                           foodDialogs!.showDeleteFoodDialog(context);
                         } else if (value == 'addOwn') {
@@ -881,3 +995,4 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     );
   }
 }
+

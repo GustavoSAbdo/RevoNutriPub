@@ -163,40 +163,68 @@ class _MealGoalFormPageState extends State<MealGoalFormPage> {
   }
 
   void _saveForm() async {
-    if (_formKey.currentState!.validate()) {
-      final newGoal = HiveMealGoal(
-        totalProtein:
-            double.parse(_proteinController.text.replaceAll(',', '.')),
-        totalCarbs: double.parse(_carbsController.text.replaceAll(',', '.')),
-        totalFats: double.parse(_fatsController.text.replaceAll(',', '.')),
-        totalCalories: double.parse(_caloriesController.text),
-      );
+  if (_formKey.currentState!.validate()) {
+    // Mostra o AlertDialog
+    bool shouldContinue = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: const Text('Com os macronutrientes sendo definidos manualmente, não podemos garantir que irá ter resultados e também iremos deixar coisas como ajustes por sua conta.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop(false); // Retorna false para não continuar
+              },
+            ),
+            TextButton(
+              child: const Text('Continuar'),
+              onPressed: () {
+                Navigator.of(context).pop(true); // Retorna true para continuar
+              },
+            ),
+          ],
+        );
+      },
+    );
 
-      totalMealGoalBox.add(newGoal);
-      Provider.of<MealGoalData>(context, listen: false).update(newGoal);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dados salvos com sucesso!')),
-      );
+    if (!shouldContinue) {
+      return; // Interrompe a execução do código
+    }
 
-      var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
-      var mealGoalsList = box.get('mealGoalsList');
+    final newGoal = HiveMealGoal(
+      totalProtein: double.parse(_proteinController.text.replaceAll(',', '.')),
+      totalCarbs: double.parse(_carbsController.text.replaceAll(',', '.')),
+      totalFats: double.parse(_fatsController.text.replaceAll(',', '.')),
+      totalCalories: double.parse(_caloriesController.text),
+    );
 
-      User? user = FirebaseAuth.instance.currentUser;
-      final userBox = Hive.box<HiveUser>('userBox');
-      if (user != null && userBox.containsKey(user.uid)) {
-        String uid = user.uid;
-        HiveUser? hiveUser = userBox.get(uid);
+    totalMealGoalBox.add(newGoal);
+    Provider.of<MealGoalData>(context, listen: false).update(newGoal);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Dados salvos com sucesso!')),
+    );
 
-        HiveMealGoalList calculatedMealGoals = NutritionService().calculateRefGoals(hiveUser!);
-        var autListBox = Hive.box<HiveMealGoalList>('mealGoalListBoxAut');
-        autListBox.put('mealGoalListBoxAut', calculatedMealGoals);
-      }
-      
-      if (mealGoalsList != null && mealGoalsList.mealGoals.isNotEmpty) {
-        Navigator.pushReplacementNamed(context, '/macrosRefPage');
-      } else {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+    var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
+    var mealGoalsList = box.get('mealGoalsList');
+
+    User? user = FirebaseAuth.instance.currentUser;
+    final userBox = Hive.box<HiveUser>('userBox');
+    if (user != null && userBox.containsKey(user.uid)) {
+      String uid = user.uid;
+      HiveUser? hiveUser = userBox.get(uid);
+
+      HiveMealGoalList calculatedMealGoals = NutritionService().calculateRefGoals(hiveUser!);
+      var autListBox = Hive.box<HiveMealGoalList>('mealGoalListBoxAut');
+      autListBox.put('mealGoalListBoxAut', calculatedMealGoals);
+    }
+    
+    if (mealGoalsList != null && mealGoalsList.mealGoals.isNotEmpty) {
+      Navigator.pushReplacementNamed(context, '/macrosRefPage');
+    } else {
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
+}
+
 }

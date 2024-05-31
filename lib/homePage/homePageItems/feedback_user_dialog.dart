@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:complete/hive/hive_meal_goal_list.dart';
+import 'package:complete/homePage/drawerItems/meal_goal_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:complete/hive/hive_user.dart';
+import 'package:provider/provider.dart';
 
 class FeedbackUserDialog extends StatefulWidget {
   @override
@@ -72,8 +75,6 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
               onPressed: () {
                 dialogData['updateFunction']();
                 updateLastFeedbackDate();
-                Navigator.of(context).pop();
-                Navigator.pushNamed(context, '/home');
               },
               child: const Text('Atualizar'),
             ),
@@ -130,7 +131,8 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
             'conte-nos como foram seus resultados de emagrecimento nessas últimas semanas.';
         updateFunction = () => updateForWeightLoss();
         content = [
-          Text('Oi ${toTitleCase(toTitleCase(currentUser.nome))}, $feedbackText'),
+          Text(
+              'Oi ${toTitleCase(toTitleCase(currentUser.nome))}, $feedbackText'),
           TextField(
             controller: _pesoController,
             keyboardType: TextInputType.number,
@@ -146,7 +148,8 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
             'conte-nos como foram seus resultados de manutenção de peso nessas últimas semanas.';
         updateFunction = () => updateForWeightMaintenance();
         content = [
-          Text('Oi ${toTitleCase(toTitleCase(currentUser.nome))}, $feedbackText'),
+          Text(
+              'Oi ${toTitleCase(toTitleCase(currentUser.nome))}, $feedbackText'),
           TextField(
             controller: _pesoController,
             keyboardType: TextInputType.number,
@@ -162,7 +165,8 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
             'conte-nos como foram seus resultados de ganho de peso nessas últimas semanas.';
         updateFunction = () => updateForWeightGain();
         content = [
-          Text('Oi ${toTitleCase(toTitleCase(currentUser.nome))}, $feedbackText'),
+          Text(
+              'Oi ${toTitleCase(toTitleCase(currentUser.nome))}, $feedbackText'),
           TextField(
             controller: _pesoController,
             keyboardType: TextInputType.number,
@@ -213,6 +217,7 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
 
   Future<void> saveUserData(currentUser, pesoNovo, carbs, attKcal) async {
     final Box<HiveUser> userBox = Hive.box<HiveUser>('userBox');
+    print('CAIU NO SAVE 1');
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
     userBox.put(uid, currentUser);
@@ -225,6 +230,24 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
     }
   }
 
+  Future<void> saveUserDataTwo(pesoNovo) async {
+    print('CAIU NO SAVE 2');
+    final userBox = Hive.box<HiveUser>('userBox');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid != null) {
+      HiveUser? hiveUser = userBox.get(uid);
+
+      if (hiveUser != null) {
+        hiveUser.peso = pesoNovo;
+        await userBox.put(uid, hiveUser);
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'peso': pesoNovo,
+      });
+    }
+  }
 
   Future<void> updateForWeightLoss() async {
     final currentUser = getUser();
@@ -234,44 +257,58 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
       double attKcal;
       double attCarbs;
       String feedbackMessage;
+      late String feedbackMessageTwo;
 
       if (resultado < -0.5) {
         feedbackMessage =
-            "${toTitleCase(toTitleCase(currentUser.nome))}, você ganhou peso. Vamos ajustar sua ingestão calórica para que possa perder peso.";
+            "${toTitleCase(toTitleCase(currentUser.nome))}, você ganhou peso.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa perder peso de maneira saudável.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 0.9;
         attCarbs = currentUser.macrosDiarios!.totalCarbs -
             (currentUser.macrosDiarios!.totalCalories - attKcal) / 4;
       } else if (resultado > 0.5 && resultado < 2.5) {
         feedbackMessage =
-            "Parabéns ${toTitleCase(currentUser.nome)}, você perdeu $resultado kgs. Estamos felizes por você. Continue assim!";
+            "Parabéns ${toTitleCase(currentUser.nome)}, você perdeu $resultado kgs.";
+        feedbackMessageTwo = " Estamos felizes por você. Continue assim!";
         attKcal = currentUser.macrosDiarios!.totalCalories;
         attCarbs = currentUser.macrosDiarios!.totalCarbs;
       } else if (resultado >= 2.5) {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você perdeu muito peso rapidamente. Vamos aumentar sua ingestão calórica para garantir que esteja perdendo peso de forma saudável.";
+            "${toTitleCase(currentUser.nome)}, você perdeu muito peso rapidamente.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa perder peso de maneira saudável.";   
         attKcal = currentUser.macrosDiarios!.totalCalories * 1.1;
         attCarbs = currentUser.macrosDiarios!.totalCarbs +
             (attKcal - currentUser.macrosDiarios!.totalCalories) / 4;
       } else if (resultado < 0 && resultado > -0.5) {
         feedbackMessage =
-            "${toTitleCase(toTitleCase(currentUser.nome))}, você ganhou peso. Vamos ajustar sua ingestão calórica para que possa perder peso.";
+            "${toTitleCase(toTitleCase(currentUser.nome))}, você ganhou peso.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa perder peso de maneira saudável.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 0.95;
         attCarbs = currentUser.macrosDiarios!.totalCarbs -
             (currentUser.macrosDiarios!.totalCalories - attKcal) / 4;
       } else {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você perdeu peso de forma bem ligeira. Vamos ajustar sua ingestão calórica para que possa alcançar seu objetivo.";
+            "${toTitleCase(currentUser.nome)}, você perdeu peso de forma bem ligeira.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa perder peso de maneira saudável.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 0.95;
         attCarbs = currentUser.macrosDiarios!.totalCarbs -
             (currentUser.macrosDiarios!.totalCalories - attKcal) / 4;
       }
 
+      final mealGoalData = Provider.of<MealGoalData>(context, listen: false);
+
       currentUser.peso = pesoNovo;
       currentUser.macrosDiarios!.totalCalories = attKcal;
       currentUser.macrosDiarios!.totalCarbs = attCarbs;
 
-      await saveUserData(currentUser, pesoNovo, attCarbs, attKcal);
-      showAlertDialog(feedbackMessage);
+      if (!mealGoalData.hasCustomMacros()) {
+        await saveUserData(currentUser, pesoNovo, attCarbs, attKcal);
+        showAlertDialog(feedbackMessage, feedbackMessageTwo);
+      } else {
+        await saveUserDataTwo(pesoNovo);
+        feedbackMessageTwo = " Como você está manuseando seus macros, não iremos fazer nenhuma alteração.";
+        showAlertDialog(feedbackMessage, feedbackMessageTwo);
+      }
     }
   }
 
@@ -283,44 +320,57 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
       double attKcal;
       double attCarbs;
       String feedbackMessage;
+      late String feedbackMessageTwo;
 
       if (resultado > -0.5 && resultado < 0.5) {
         feedbackMessage =
-            "Parabéns ${toTitleCase(currentUser.nome)}, você manteve seu peso com sucesso! Pequenas variações são normais.";
+            "Parabéns ${toTitleCase(currentUser.nome)}, você manteve seu peso com sucesso!";
+        feedbackMessageTwo = " Pequenas variações são normais.";
         attKcal = currentUser.macrosDiarios!.totalCalories;
         attCarbs = currentUser.macrosDiarios!.totalCarbs;
       } else if (resultado <= -0.5 && resultado > -1) {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você ganhou um pouco de peso. Vamos ajustar sua ingestão calórica para manter o peso.";
+            "${toTitleCase(currentUser.nome)}, você ganhou um pouco de peso.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa manter o peso.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 0.95;
         attCarbs = currentUser.macrosDiarios!.totalCarbs -
             (currentUser.macrosDiarios!.totalCalories - attKcal) / 4;
       } else if (resultado <= -1) {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você ganhou muito peso. Vamos ajustar sua ingestão calórica para que possa manter o peso.";
+            "${toTitleCase(currentUser.nome)}, você ganhou muito peso.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 0.9;
         attCarbs = currentUser.macrosDiarios!.totalCarbs -
             (currentUser.macrosDiarios!.totalCalories - attKcal) / 4;
       } else if (resultado > 1) {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você perdeu um pouco de peso. Vamos ajustar sua ingestão calórica para manter o peso.";
+            "${toTitleCase(currentUser.nome)}, você perdeu um pouco de peso.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa manter o peso.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 1.05;
         attCarbs = currentUser.macrosDiarios!.totalCarbs +
             (attKcal - currentUser.macrosDiarios!.totalCalories) / 4;
       } else {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você perdeu muito peso. Vamos ajustar sua ingestão calórica para que possa manter o peso.";
+            "${toTitleCase(currentUser.nome)}, você perdeu muito peso.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa manter o peso.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 1.1;
         attCarbs = currentUser.macrosDiarios!.totalCarbs +
             (attKcal - currentUser.macrosDiarios!.totalCalories) / 4;
       }
 
+      final mealGoalData = Provider.of<MealGoalData>(context, listen: false);
+
       currentUser.peso = pesoNovo;
       currentUser.macrosDiarios!.totalCalories = attKcal;
       currentUser.macrosDiarios!.totalCarbs = attCarbs;
 
-      await saveUserData(currentUser, pesoNovo, attCarbs, attKcal);
-      showAlertDialog(feedbackMessage);
+      if (!mealGoalData.hasCustomMacros()) {
+        await saveUserData(currentUser, pesoNovo, attCarbs, attKcal);
+        showAlertDialog(feedbackMessage, feedbackMessageTwo);
+      } else {
+        await saveUserDataTwo(pesoNovo);
+        feedbackMessageTwo = " Como você está manuseando seus macros, não iremos fazer nenhuma alteração.";
+        showAlertDialog(feedbackMessage, feedbackMessageTwo);
+      }
     }
   }
 
@@ -332,72 +382,99 @@ class _FeedbackUserDialogState extends State<FeedbackUserDialog> {
       double attKcal;
       double attCarbs;
       String feedbackMessage;
+      late String feedbackMessageTwo;
 
       if (resultado < 0 && resultado > -1) {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você perdeu um pouco de peso. Vamos aumentar sua ingestão calórica para que possa ganhar peso.";
+            "${toTitleCase(currentUser.nome)}, você perdeu um pouco de peso.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa ganhar peso da melhor forma.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 1.05;
         attCarbs = currentUser.macrosDiarios!.totalCarbs +
             (attKcal - currentUser.macrosDiarios!.totalCalories) / 4;
       } else if (resultado < -1) {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você perdeu muito peso. Vamos aumentar sua ingestão calórica para que possa ganhar peso.";
+            "${toTitleCase(currentUser.nome)}, você perdeu muito peso.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa ganhar peso da melhor forma.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 1.1;
         attCarbs = currentUser.macrosDiarios!.totalCarbs +
             (attKcal - currentUser.macrosDiarios!.totalCalories) / 4;
       } else if (resultado >= 0 && resultado <= 1.2) {
         feedbackMessage =
-            "Parabéns ${toTitleCase(currentUser.nome)}, você ganhou $resultado kgs. Estamos felizes por você. Continue assim!";
+            "Parabéns ${toTitleCase(currentUser.nome)}, você ganhou $resultado kgs.";
+        feedbackMessageTwo = ' Estamos felizes por você. Continue assim!';
         attKcal = currentUser.macrosDiarios!.totalCalories;
         attCarbs = currentUser.macrosDiarios!.totalCarbs;
       } else if (resultado > 1.2 && resultado < 1.5) {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você ganhou peso ligeiramente maior do que o esperado. Vamos diminuir um pouco sua ingestão calórica.";
+            "${toTitleCase(currentUser.nome)}, você ganhou peso ligeiramente maior do que o esperado.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa ganhar peso da melhor forma.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 0.95;
         attCarbs = currentUser.macrosDiarios!.totalCarbs +
             (attKcal - currentUser.macrosDiarios!.totalCalories) / 4;
       } else {
         feedbackMessage =
-            "${toTitleCase(currentUser.nome)}, você ganhou muito peso. Vamos ajustar sua ingestão calórica para que possa ganhar peso de forma saudável.";
+            "${toTitleCase(currentUser.nome)}, você ganhou muito peso.";
+        feedbackMessageTwo = " Vamos ajustar sua ingestão calórica para que possa ganhar peso da melhor forma.";
         attKcal = currentUser.macrosDiarios!.totalCalories * 0.9;
         attCarbs = currentUser.macrosDiarios!.totalCarbs +
             (attKcal - currentUser.macrosDiarios!.totalCalories) / 4;
       }
 
+      final mealGoalData = Provider.of<MealGoalData>(context, listen: false);
+
       currentUser.peso = pesoNovo;
       currentUser.macrosDiarios!.totalCalories = attKcal;
       currentUser.macrosDiarios!.totalCarbs = attCarbs;
 
-      await saveUserData(currentUser, pesoNovo, attCarbs, attKcal);
-      showAlertDialog(feedbackMessage);
+      if (!mealGoalData.hasCustomMacros()) {
+        await saveUserData(currentUser, pesoNovo, attCarbs, attKcal);
+        showAlertDialog(feedbackMessage, feedbackMessageTwo);
+      } else {
+        await saveUserDataTwo(pesoNovo);
+        feedbackMessageTwo = " Como você está manuseando seus macros, não iremos fazer nenhuma alteração.";
+        showAlertDialog(feedbackMessage, feedbackMessageTwo);
+      }
     }
   }
 
-  void showAlertDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Feedback'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(message),
-              ],
-            ),
+  void showAlertDialog(String message, String messageTwo) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Feedback'),
+        content: SingleChildScrollView(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(child: Text(message)),
+              Expanded(child: Text(messageTwo)),
+            ],
           ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+
+              var box = Hive.box<HiveMealGoalList>('mealGoalListBox');
+              var mealGoalsList =
+                  box.get('mealGoalsList'); // Fecha o diálogo de feedback
+              if (mealGoalsList != null &&
+                  mealGoalsList.mealGoals.isNotEmpty) {
+                Navigator.pushReplacementNamed(context, '/macrosRefPage');
+              } else {
+                Navigator.pushReplacementNamed(context, '/home');
+              }
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
   void dispose() {

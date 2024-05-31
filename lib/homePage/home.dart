@@ -4,6 +4,7 @@ import 'package:complete/homePage/homePageItems/nutrition_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'homePageItems/calorie_tracker.dart';
 import 'homePageItems/panel_list.dart';
 import 'floatingButton/button_widget.dart';
@@ -253,31 +254,31 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> checkLastFeedbackDate() async {
-  final userBox = Hive.box<HiveUser>('userBox');
-  final uid = FirebaseAuth.instance.currentUser?.uid;
+    final userBox = Hive.box<HiveUser>('userBox');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
-  if (uid != null) {
-    HiveUser? hiveUser = userBox.get(uid);
+    if (uid != null) {
+      HiveUser? hiveUser = userBox.get(uid);
 
-    if (hiveUser != null && hiveUser.lastFeedbackDate != null) {
-      final lastFeedbackDate = hiveUser.lastFeedbackDate!;
-      final normalizedLastFeedbackDate = DateTime(lastFeedbackDate.year, lastFeedbackDate.month, lastFeedbackDate.day);
+      if (hiveUser != null && hiveUser.lastFeedbackDate != null) {
+        final lastFeedbackDate = hiveUser.lastFeedbackDate!;
+        final normalizedLastFeedbackDate = DateTime(lastFeedbackDate.year,
+            lastFeedbackDate.month, lastFeedbackDate.day);
 
-      final now = DateTime.now();
-      final normalizedNow = DateTime(now.year, now.month, now.day);
+        final now = DateTime.now();
+        final normalizedNow = DateTime(now.year, now.month, now.day);
 
-      if (normalizedNow.difference(normalizedLastFeedbackDate).inDays >= 15) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return FeedbackUserDialog(); 
-          },
-        );
+        if (normalizedNow.difference(normalizedLastFeedbackDate).inDays >= 15) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return FeedbackUserDialog();
+            },
+          );
+        }
       }
     }
   }
-}
-
 
   @override
   void dispose() {
@@ -381,7 +382,6 @@ class _HomePageState extends State<HomePage> {
     Box<HiveRefeicao> refeicaoBox =
         Provider.of<Box<HiveRefeicao>>(context, listen: false);
     if (userId == null) {
-      // Retorne um widget de erro ou redirecionamento aqui
       return const Scaffold(
         body: Center(child: Text("Usuário não identificado.")),
       );
@@ -391,20 +391,17 @@ class _HomePageState extends State<HomePage> {
       future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          // Enquanto os dados estão carregando, exibe um indicador de carregamento
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (!snapshot.hasData || snapshot.data?.data() == null) {
-          // Se não houver dados, retorna um widget de erro ou um texto informativo
           return const Scaffold(
             body: Center(child: Text("Dados do usuário não disponíveis.")),
           );
         }
 
-        // Se houver dados disponíveis, processa-os
         String userName = toTitleCase(hiveUser.nome);
 
         void showDataAlert(String routename) {
@@ -417,8 +414,7 @@ class _HomePageState extends State<HomePage> {
                     'Você já possui refeições cadastradas. Se já tiver ingerido as refeições, recomendamos que espere o dia seguinte para alterar os dados. Caso queira prosseguir, aperte Continuar, porém iremos apagar suas refeições caso você faça alterações.'),
                 actions: <Widget>[
                   Row(
-                    mainAxisAlignment: MainAxisAlignment
-                        .spaceEvenly, // Melhor distribuição dos botões
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: <Widget>[
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
@@ -451,14 +447,12 @@ class _HomePageState extends State<HomePage> {
           }
         }
 
-        // Construção do layout principal com os dados atualizados
         return Scaffold(
           appBar: AppBar(
             title: const Text(""),
           ),
           drawer: Drawer(
-            child: ListView(
-              padding: EdgeInsets.zero,
+            child: Column(
               children: <Widget>[
                 DrawerHeader(
                   child: Column(
@@ -467,7 +461,7 @@ class _HomePageState extends State<HomePage> {
                       const Text(
                         'RevoNutri',
                         style: TextStyle(
-                          fontSize: 24, // Ou o tamanho que você preferir
+                          fontSize: 24,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -504,13 +498,6 @@ class _HomePageState extends State<HomePage> {
                     Navigator.pushNamed(context, '/macrosPage');
                   },
                 ),
-                // ListTile(
-                //   leading: const Icon(Icons.paid),
-                //   title: const Text('Gerenciar assinatura'),
-                //   onTap: () {
-                //     print('${hiveUser.dataNascimento}');
-                //   },
-                // ),
                 ListTile(
                   leading: const Icon(Icons.paid),
                   title: const Text('Teste'),
@@ -518,7 +505,7 @@ class _HomePageState extends State<HomePage> {
                     showDialog(
                       context: context,
                       builder: (BuildContext context) {
-                        return FeedbackUserDialog(); // Certifique-se de que este é o widget correto que você definiu
+                        return FeedbackUserDialog();
                       },
                     );
                   },
@@ -532,6 +519,22 @@ class _HomePageState extends State<HomePage> {
                     if (mounted) {
                       Navigator.pushNamedAndRemoveUntil(
                           context, '/login', (Route<dynamic> route) => false);
+                    }
+                  },
+                ),
+                const Spacer(),
+                ListTile(
+                  leading: const Icon(Icons.support_agent),
+                  title: const Text('Fale conosco'),
+                  onTap: () async {
+                    final whatsappUrl =
+                        Uri.parse("https://wa.me/message/5IJPDETL2A7QF1");
+                    if (await canLaunchUrl(whatsappUrl)) {
+                      await launchUrl(whatsappUrl,
+                          mode: LaunchMode.externalApplication);
+                    } else {
+                      print('Could not launch $whatsappUrl');
+                      throw 'Could not launch $whatsappUrl';
                     }
                   },
                 ),

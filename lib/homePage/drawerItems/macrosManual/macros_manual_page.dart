@@ -9,18 +9,20 @@ class MacrosManualPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Box<HiveRefeicao> refeicaoBox =
-                    Provider.of<Box<HiveRefeicao>>(context, listen: false);
+        Provider.of<Box<HiveRefeicao>>(context, listen: false);
 
-    void showDataAlert(String routename ) {
+    void showDataAlert(String routename) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Atenção!'),
-            content: const Text('Você já possui refeições cadastradas. Se já tiver ingerido as refeições, recomendamos que espere o dia seguinte para alterar os dados. Caso queira prosseguir, aperte Continuar, porém iremos apagar suas refeições.'),
+            content: const Text(
+                'Você já possui refeições cadastradas. Se já tiver ingerido as refeições, recomendamos que espere o dia seguinte para alterar os dados. Caso queira prosseguir, aperte Continuar, porém iremos apagar suas refeições.'),
             actions: <Widget>[
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Melhor distribuição dos botões
+                mainAxisAlignment: MainAxisAlignment
+                    .spaceEvenly, // Melhor distribuição dos botões
                 children: <Widget>[
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
@@ -54,14 +56,45 @@ class MacrosManualPage extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-      ),
+      appBar: AppBar(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             ElevatedButton(
-              onPressed: () => checkDataAndNavigate('/macrosDaDietaManualmente'),
+              onPressed: () async {
+                bool shouldContinue = await showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Atenção'),
+                      content: const Text(
+                          'Não recomendamos que altere essa página caso não tenha conhecimentos em nutrição.'),
+                      actions: <Widget>[
+                        TextButton(
+                          child: const Text('Cancelar'),
+                          onPressed: () {
+                            Navigator.of(context)
+                                .pop(false); // Retorna false para não continuar
+                          },
+                        ),
+                        TextButton(
+                          child: const Text('Continuar'),
+                          onPressed: () {
+                            Navigator.of(context)
+                                .pop(true); // Retorna true para continuar
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (!shouldContinue) {
+                  return; // Interrompe a execução do código
+                }
+                checkDataAndNavigate('/macrosDaDietaManualmente');
+              },
               child: const Text('Macros da Dieta'),
             ),
             const SizedBox(height: 20), // Espaço entre os botões

@@ -12,6 +12,10 @@ class MealGoalData extends ChangeNotifier {
     }
   }
 
+  bool hasCustomMacros() {
+    return mealGoal != null;
+  }
+
   void update(HiveMealGoal newGoal) {
     var key = mealGoalBox.values
         .toList()

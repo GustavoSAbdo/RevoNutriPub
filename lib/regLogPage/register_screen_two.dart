@@ -27,7 +27,7 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
   String textoNivelAtividade = '';
   final TextEditingController _pesoController = TextEditingController();
   final TextEditingController _alturaController = TextEditingController();
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool _readOnlyPeso = false;
   bool _readOnlyAltura = false;
   Map<String, dynamic> initialData = {};
@@ -317,7 +317,13 @@ class _RegistroParteDoisState extends State<RegistroParteDois> {
           'refeicaoPosTreino': refeicaoPosTreino,
           'lastFeedbackDate': Timestamp.fromDate(lastFeedbackDate),
           'lastObjectiveChange': Timestamp.fromDate(lastObjectiveChange),
-          'regDois': true
+          'regDois': true,
+          'macrosDiarios': {
+                    'totalCalories': goal.totalCalories,
+                    'totalProtein': goal.totalProtein,
+                    'totalCarbs': goal.totalCarbs,
+                    'totalFats': goal.totalFats,
+                  },
         }).then((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Dados cadastrados com sucesso!')),
