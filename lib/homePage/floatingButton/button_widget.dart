@@ -65,7 +65,8 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Exemplos de alimentos em que as calorias são majoritariamente fonte de carboidratos: ',
+                            text:
+                                'Exemplos de alimentos em que as calorias são majoritariamente fonte de carboidratos: ',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           TextSpan(
@@ -79,11 +80,13 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Exemplos de alimentos em que as calorias são majoritariamente fonte de proteína: ',
+                            text:
+                                'Exemplos de alimentos em que as calorias são majoritariamente fonte de proteína: ',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           TextSpan(
-                            text: 'frango peito, carne bovina patinho, porco lombo, etc...',
+                            text:
+                                'frango peito, carne bovina patinho, porco lombo, etc...',
                           ),
                         ],
                       ),
@@ -93,11 +96,13 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: 'Exemplos de alimentos em que as calorias são majoritariamente fonte de gordura: ',
+                            text:
+                                'Exemplos de alimentos em que as calorias são majoritariamente fonte de gordura: ',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           TextSpan(
-                            text: 'azeite, amendoim, castanha, abacate, ovo, etc...',
+                            text:
+                                'azeite, amendoim, castanha, abacate, ovo, etc...',
                           ),
                         ],
                       ),
@@ -111,7 +116,8 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           TextSpan(
-                            text: 'Recomendamos fortemente a ingestão de legumes, frutas e vegetais. Você pode consumir vegetais à vontade, sem precisar calcular no aplicativo.',
+                            text:
+                                'Recomendamos fortemente a ingestão de legumes, frutas e vegetais. Você pode consumir vegetais à vontade, sem precisar calcular no aplicativo.',
                           ),
                         ],
                       ),
@@ -239,7 +245,6 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     var dataBaseFoodsBox = Hive.box<HiveFoodItem>('dataBaseFoods');
     var foodBox = Hive.box<HiveFoodItem>('foodBox');
 
-    // Função para mostrar o diálogo de seleção de alimentos por macronutriente
     Future<void> selectFoodByNutrient(
         String nutrient, List<FoodItem> targetList) async {
       bool selectionComplete = false;
@@ -257,13 +262,15 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
                 width: double.maxFinite,
                 child: SearchAndSelectFoodCombinedWidget(
                   nutrientDominant: nutrient,
-                  dataBaseFoods:
-                      dataBaseFoodsBox, // Ajuste para sua caixa do Hive para "tabela TACO"
-                  foodBox:
-                      foodBox, // Ajuste para sua caixa do Hive para alimentos próprios
+                  dataBaseFoods: dataBaseFoodsBox,
+                  foodBox: foodBox,
                   onFoodSelected: (SelectedFoodItem selectedFood) {
                     targetList
                         .add(FoodItem.fromMap(selectedFood.foodItem.toMap()));
+                  },
+                  onFoodRemoved: (SelectedFoodItem removedFood) {
+                    targetList.removeWhere(
+                        (item) => item.name == removedFood.foodItem.name);
                   },
                 ),
               ),
@@ -394,7 +401,6 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
           mealGoal);
     }
 
-    // Apresenta a visão geral das quantidades de alimentos selecionados para confirmação
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -450,7 +456,7 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
         Provider.of<Box<HiveRefeicao>>(context, listen: false);
     HiveRefeicao hiveRefeicao = refeicaoBox.getAt(index) ?? HiveRefeicao();
 
-    hiveRefeicao.items.clear(); 
+    hiveRefeicao.items.clear();
 
     refeicaoBox.putAt(index, hiveRefeicao);
     widget.onRefeicaoChanged.call();
@@ -995,4 +1001,3 @@ class _AddRemoveFoodWidgetState extends State<AddRemoveFoodWidget> {
     );
   }
 }
-

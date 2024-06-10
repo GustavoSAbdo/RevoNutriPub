@@ -1,69 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:complete/hive/hive_food_item.dart';
 
-
-class SearchAndSelectFoodFromHiveWidget extends StatefulWidget {
-  final Function(HiveFoodItem) onFoodSelected;
+class SearchAndSelectFoodCombinedWidget extends StatefulWidget {
+  final Function(SelectedFoodItem) onFoodSelected;
+  final Function(SelectedFoodItem) onFoodRemoved;
   final String nutrientDominant;
+  final Box<HiveFoodItem> dataBaseFoods;
   final Box<HiveFoodItem> foodBox;
 
-  const SearchAndSelectFoodFromHiveWidget(
-      {super.key, required this.onFoodSelected, required this.nutrientDominant, required this.foodBox});
+  const SearchAndSelectFoodCombinedWidget({
+    super.key,
+    required this.onFoodSelected,
+    required this.onFoodRemoved,
+    required this.nutrientDominant,
+    required this.dataBaseFoods,
+    required this.foodBox,
+  });
 
   @override
-  _SearchAndSelectFoodFromHiveWidgetState createState() =>
-      _SearchAndSelectFoodFromHiveWidgetState();
+  State<SearchAndSelectFoodCombinedWidget> createState() => _SearchAndSelectFoodCombinedWidgetState();
 }
 
-class _SearchAndSelectFoodFromHiveWidgetState
-    extends State<SearchAndSelectFoodFromHiveWidget> {
+class _SearchAndSelectFoodCombinedWidgetState extends State<SearchAndSelectFoodCombinedWidget> {
   String searchQuery = '';
-  List<HiveFoodItem> selectedFoods = [];
+  List<SelectedFoodItem> searchResults = [];
   final TextEditingController searchController = TextEditingController();
+  List<SelectedFoodItem> selectedFoods = [];
 
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
-
-  void addFoodToSelected(HiveFoodItem foodItem) {
-  if (selectedFoods.length >= 3) {
-    // Mostra o AlertDialog se já houver 3 alimentos selecionados
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
+  void addFoodToSelected(SelectedFoodItem selectedFood) {
+    if (selectedFoods.length >= 3) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
           title: const Text("Limite Atingido"),
           content: const Text("Só é possível adicionar 3 alimentos. Caso queira adicionar outro, delete um da lista primeiro."),
           actions: [
             TextButton(
               child: const Text("OK"),
-              onPressed: () {
-                Navigator.of(context).pop(); // Fecha o AlertDialog
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
-        );
-      },
-    );
-  } else {
-    // Adiciona o alimento à lista se houver menos de 3 itens
-    setState(() {
-      selectedFoods.add(foodItem);
-      widget.onFoodSelected(foodItem);
-    });
-    searchController.clear();
-    searchQuery = '';
-    FocusScope.of(context).unfocus();
+        ),
+      );
+    } else {
+      setState(() {
+        selectedFoods.add(selectedFood);
+        widget.onFoodSelected(selectedFood);
+      });
+      searchController.clear();
+      searchQuery = '';
+      FocusScope.of(context).unfocus();
+    }
   }
-}
 
   void removeFoodAt(int index) {
     setState(() {
-      selectedFoods.removeAt(index);
+      SelectedFoodItem removedFood = selectedFoods.removeAt(index);
+      widget.onFoodRemoved(removedFood);
+    });
+  }
+
+  void searchFoods() {
+    final query = searchQuery.toLowerCase();
+    final List<SelectedFoodItem> results = [];
+
+    results.addAll(widget.dataBaseFoods.values
+        .where((item) => item.name.toLowerCase().contains(query) && item.dominantNutrient == widget.nutrientDominant)
+        .map((item) => SelectedFoodItem(foodItem: item, source: 'Tabela TACO'))
+        .toList());
+
+    results.addAll(widget.foodBox.values
+        .where((item) => item.name.toLowerCase().contains(query) && item.dominantNutrient == widget.nutrientDominant)
+        .map((item) => SelectedFoodItem(foodItem: item, source: 'Tabela Própria'))
+        .toList());
+
+    setState(() {
+      searchResults = results;
     });
   }
 
@@ -76,54 +89,56 @@ class _SearchAndSelectFoodFromHiveWidgetState
           child: TextField(
             controller: searchController,
             decoration: const InputDecoration(
-              labelText: 'Pesquisar Alimento Próprio',
+              labelText: 'Pesquisar Alimento',
               suffixIcon: Icon(Icons.search),
             ),
             onChanged: (value) {
               setState(() {
                 searchQuery = value.toLowerCase();
               });
+              searchFoods();
             },
           ),
         ),
         Expanded(
           child: searchQuery.isEmpty
-              ? ListView.builder(
-                  itemCount: selectedFoods.length,
-                  itemBuilder: (context, index) {
-                    final food = selectedFoods[index];
-                    return ListTile(
-                      title: Text(food.name),
-                      subtitle: Text('Calorias: ${food.calories.toStringAsFixed(2)}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.remove_circle_outline),
-                        onPressed: () => removeFoodAt(index),
-                      ),
-                    );
-                  },
-                )
-              : ListView.builder(
-                  itemCount: widget.foodBox.length,
-                  itemBuilder: (context, index) {
-                    HiveFoodItem? foodItem = widget.foodBox.getAt(index);
-                    if (foodItem != null &&
-                        foodItem.name.toLowerCase().contains(searchQuery) &&
-                        foodItem.dominantNutrient == widget.nutrientDominant) {
-                      return ListTile(
-                        title: Text(foodItem.name),
-                        subtitle: Text('Calorias: ${foodItem.calories.toStringAsFixed(2)}, Carboidrato: ${foodItem.carbs.toStringAsFixed(2)}, Proteina: ${foodItem.protein.toStringAsFixed(2)}, Gordura: ${foodItem.fats.toStringAsFixed(2)}, '),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.add),
-                          onPressed: () => addFoodToSelected(foodItem),
-                        ),
-                      );
-                    } else {
-                      return Container(); // Retorna um container vazio para alimentos que não correspondem à consulta de pesquisa
-                    }
-                  },
-                ),
+            ? ListView.builder(
+                itemCount: selectedFoods.length,
+                itemBuilder: (context, index) {
+                  final item = selectedFoods[index];
+                  return ListTile(
+                    title: Text('${item.foodItem.name} (${item.source})'),
+                    subtitle: Text('Calorias: ${item.foodItem.calories.toStringAsFixed(2)}, Carboidrato: ${item.foodItem.carbs.toStringAsFixed(2)}, Proteina: ${item.foodItem.protein.toStringAsFixed(2)}, Gordura: ${item.foodItem.fats.toStringAsFixed(2)}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: () => removeFoodAt(index),
+                    ),
+                  );
+                },
+              )
+            : ListView.builder(
+                itemCount: searchResults.length,
+                itemBuilder: (context, index) {
+                  final item = searchResults[index];
+                  return ListTile(
+                    title: Text('${item.foodItem.name} (${item.source})'),
+                    subtitle: Text('Calorias: ${item.foodItem.calories.toStringAsFixed(2)}, Carboidrato: ${item.foodItem.carbs.toStringAsFixed(2)}, Proteina: ${item.foodItem.protein.toStringAsFixed(2)}, Gordura: ${item.foodItem.fats.toStringAsFixed(2)}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () => addFoodToSelected(item),
+                    ),
+                  );
+                },
+              ),
         ),
       ],
     );
   }
+}
+
+class SelectedFoodItem {
+  final HiveFoodItem foodItem;
+  final String source;
+
+  SelectedFoodItem({required this.foodItem, required this.source});
 }

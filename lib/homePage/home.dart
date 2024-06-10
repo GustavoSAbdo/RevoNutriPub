@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:complete/homePage/classes.dart';
 import 'package:complete/homePage/homePageItems/feedback_user_dialog.dart';
 import 'package:complete/homePage/homePageItems/nutrition_service.dart';
@@ -373,6 +375,35 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void openWhatsapp(
+      {required BuildContext context,
+      required String text,
+      required String number}) async {
+    var whatsapp = number; //+92xx enter like this
+    var whatsappURlAndroid =
+        "whatsapp://send?phone=$whatsapp&text=$text";
+    var whatsappURLIos = "https://wa.me/$whatsapp?text=${Uri.tryParse(text)}";
+    if (Platform.isIOS) {
+      // for iOS phone only
+      if (await canLaunchUrl(Uri.parse(whatsappURLIos))) {
+        await launchUrl(Uri.parse(
+          whatsappURLIos,
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Whatsapp not installed")));
+      }
+    } else {
+      // android , web
+      if (await canLaunchUrl(Uri.parse(whatsappURlAndroid))) {
+        await launchUrl(Uri.parse(whatsappURlAndroid));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Whatsapp not installed")));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
@@ -498,18 +529,18 @@ class _HomePageState extends State<HomePage> {
                     Navigator.pushNamed(context, '/macrosPage');
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.paid),
-                  title: const Text('Teste'),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return FeedbackUserDialog();
-                      },
-                    );
-                  },
-                ),
+                // ListTile(
+                //   leading: const Icon(Icons.paid),
+                //   title: const Text('Teste'),
+                //   onTap: () {
+                //     showDialog(
+                //       context: context,
+                //       builder: (BuildContext context) {
+                //         return FeedbackUserDialog();
+                //       },
+                //     );
+                //   },
+                // ),
                 ListTile(
                   leading: const Icon(Icons.exit_to_app),
                   title: const Text('Sair'),
@@ -527,15 +558,7 @@ class _HomePageState extends State<HomePage> {
                   leading: const Icon(Icons.support_agent),
                   title: const Text('Fale conosco'),
                   onTap: () async {
-                    final whatsappUrl =
-                        Uri.parse("https://wa.me/message/5IJPDETL2A7QF1");
-                    if (await canLaunchUrl(whatsappUrl)) {
-                      await launchUrl(whatsappUrl,
-                          mode: LaunchMode.externalApplication);
-                    } else {
-                      print('Could not launch $whatsappUrl');
-                      throw 'Could not launch $whatsappUrl';
-                    }
+                    openWhatsapp(context: context, number: '+553184926620', text: 'Olá, tudo bem?');
                   },
                 ),
               ],
