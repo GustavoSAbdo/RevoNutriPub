@@ -24,6 +24,13 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.1'
 }
 
+// Carregar propriedades do arquivo key.properties
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "com.gustavoabdo.revonutri"
     compileSdkVersion 34
@@ -53,10 +60,10 @@ android {
 
     signingConfigs {
         release {
-            keyAlias 'my-key-alias' // Verifique se o alias está correto
-            keyPassword '18274536' // Verifique se a senha está correta
-            storeFile file('../my-release-key.jks') // Caminho atualizado para refletir a localização correta
-            storePassword '18274536' // Verifique se a senha está correta
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
         }
     }
 
@@ -71,6 +78,10 @@ android {
                     enableSplit = false
                 }
             }
+        }
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 

@@ -1,4 +1,4 @@
-package com.example.complete
+package com.gustavoabdo.revonutri
 
 import io.flutter.embedding.android.FlutterActivity
 
